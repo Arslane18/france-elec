@@ -1,5 +1,5 @@
 [project]
-name = "france-elec"
+name = "energy-pipeline"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -15,8 +15,13 @@ dependencies = [
 ]
 
 [project.scripts]
-france-elec = "france_elec:main"
+energy-pipeline = "energy-pipeline:main"
 
 [build-system]
 requires = ["uv_build>=0.12.6,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.6.3",
+]

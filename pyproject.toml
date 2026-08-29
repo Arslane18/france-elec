@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.13.15,<3.14"
 dependencies = [
+    "apache-airflow>=3.3.1",
     "fastapi>=0.129.0,<0.137.0",
     "graphviz>=0.21",
     "polars>=1.44.1",

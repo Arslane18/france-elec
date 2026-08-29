@@ -1,7 +1,7 @@
 import requests
 from typing import Dict
+from energy_pipeline.config import BASE_URL
 
-BASE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-cons-def"
 
 def fetch_data_from_api(select: str = "*", limit=None, offset=0, where=None, endpoint:str="/records"):
     params = {"select": select, "limit": limit, "offset": offset}

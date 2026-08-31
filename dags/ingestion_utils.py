@@ -22,4 +22,8 @@ def retrieve_boundaries_years() -> Dict[str, int]:
     params = {"select": "Min(year(date_heure)) as start_year, Max(year(date_heure)) as end_year"}
     fetched_result = fetch_data_from_api(url=BASE_URL + "/records", params=params).json()
     return fetched_result["results"][0]
+
+def write_bytes_to_file(content: bytes, path: str) -> None:
+    with open(path, "wb") as f:
+        f.write(content)
     

@@ -1,5 +1,5 @@
 from airflow.sdk import dag, task
-from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years
+from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years, write_bytes_to_file
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from datetime import timedelta
@@ -25,8 +25,7 @@ def simple_extraction():
         params = {"where": f"year(date_heure) = {year}"}
         resp = fetch_data_from_api(url=BASE_URL + "/exports/parquet", params=params)
         path = f"data/raw/eco2mix-regional-cons-def{year}.parquet"
-        with open(path, "wb") as f:
-            f.write(resp.content)
+        write_bytes_to_file(resp.content, path)
 
     @task
     def split_hive_format(root_folder_name: str):

@@ -3,6 +3,7 @@ from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from datetime import timedelta
+from energy_pipeline.config import BASE_URL
 
 @dag(
     schedule=None,
@@ -21,8 +22,8 @@ def simple_extraction():
 
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_year(year: int):
-        where = f"year(date_heure) = {year}"
-        year_of_data = fetch_data_from_api(endpoint="/exports/parquet", where=where)
+        params = {"where": f"year(date_heure) = {year}"}
+        year_of_data = fetch_data_from_api(url=BASE_URL + "/exports/parquet", params=params)
         path = f"data/raw/eco2mix-regional-cons-def{year}.parquet"
         with open(path, "wb") as f:
             f.write(year_of_data.content)

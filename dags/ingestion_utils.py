@@ -1,26 +1,25 @@
 import requests
-from typing import Dict
+from typing import Dict, Any
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from energy_pipeline.config import BASE_URL
+from energy_pipeline.config import BASE_URL, WEATHER_URL
 
 
 session = requests.Session()
 retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
 session.mount("https://", HTTPAdapter(max_retries=retry))
 
-def fetch_data_from_api(select: str = "*", limit=None, offset=0, where=None, endpoint:str="/records"):
-    params = {"select": select, "limit": limit, "offset": offset}
-    if where:
-        params["where"] = where
-    resp = requests.get(BASE_URL + endpoint, params=params, timeout=30)
+def fetch_data_from_api(url: str, params: Dict[str,Any]):
+    '''Simply fetch data from an given url'''
+    resp = requests.get(url, params=params, timeout=30)
     resp.raise_for_status()
     return resp
 
 def retrieve_boundaries_years() -> Dict[str, int]:
     '''
     Retrieve boundaries years and send them as dict. Keys are start_year and end_year.'''
-    fetched_result = fetch_data_from_api(select="Min(year(date_heure)) as start_year, Max(year(date_heure)) as end_year").json()
+    params = {"where": "Min(year(date_heure)) as start_year, Max(year(date_heure)) as end_year"}
+    fetched_result = fetch_data_from_api(url=BASE_URL, params=params).json()
     return fetched_result["results"][0]
     

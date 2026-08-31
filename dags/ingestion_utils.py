@@ -2,6 +2,7 @@ import requests
 from typing import Dict, Any
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from datetime import datetime
 
 from energy_pipeline.config import BASE_URL, WEATHER_URL
 
@@ -26,4 +27,17 @@ def retrieve_boundaries_years() -> Dict[str, int]:
 def write_bytes_to_file(content: bytes, path: str) -> None:
     with open(path, "wb") as f:
         f.write(content)
-    
+
+
+
+def raw_weather_path(region_name: str, year: int) -> str:
+    return f"data/raw/openmeteo-{region_name}-{year}.json"
+
+
+def year_date_range(year: int) -> tuple[str, str]:
+    '''Full calendar year, capped at today for the current year.'''
+    start_date = f"{year}-01-01"
+    end_date = f"{year}-12-31"
+    if year == datetime.today().year:
+        end_date = datetime.today().strftime("%Y-%m-%d")
+    return start_date, end_date

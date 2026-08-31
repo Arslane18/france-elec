@@ -1,7 +1,14 @@
 import requests
 from typing import Dict
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-BASE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-cons-def"
+from energy_pipeline.config import BASE_URL
+
+
+session = requests.Session()
+retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+session.mount("https://", HTTPAdapter(max_retries=retry))
 
 def fetch_data_from_api(select: str = "*", limit=None, offset=0, where=None, endpoint:str="/records"):
     params = {"select": select, "limit": limit, "offset": offset}

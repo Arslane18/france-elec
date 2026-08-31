@@ -23,10 +23,10 @@ def simple_extraction():
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_year(year: int):
         params = {"where": f"year(date_heure) = {year}"}
-        year_of_data = fetch_data_from_api(url=BASE_URL + "/exports/parquet", params=params)
+        resp = fetch_data_from_api(url=BASE_URL + "/exports/parquet", params=params)
         path = f"data/raw/eco2mix-regional-cons-def{year}.parquet"
         with open(path, "wb") as f:
-            f.write(year_of_data.content)
+            f.write(resp.content)
 
     @task
     def split_hive_format(root_folder_name: str):

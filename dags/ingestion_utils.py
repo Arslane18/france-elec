@@ -19,7 +19,7 @@ def fetch_data_from_api(url: str, params: Dict[str,Any]):
 def retrieve_boundaries_years() -> Dict[str, int]:
     '''
     Retrieve boundaries years and send them as dict. Keys are start_year and end_year.'''
-    params = {"where": "Min(year(date_heure)) as start_year, Max(year(date_heure)) as end_year"}
-    fetched_result = fetch_data_from_api(url=BASE_URL, params=params).json()
+    params = {"select": "Min(year(date_heure)) as start_year, Max(year(date_heure)) as end_year"}
+    fetched_result = fetch_data_from_api(url=BASE_URL + "/records", params=params).json()
     return fetched_result["results"][0]
     

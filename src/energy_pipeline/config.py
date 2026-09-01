@@ -1,7 +1,16 @@
+from pathlib import Path
+
+# Absolute on purpose: the Spark standalone cluster (Docker) mounts this same
+# project directory at this same absolute path, so paths built from RAW_DIR /
+# BRONZE_DIR resolve identically whether read from the Airflow host process
+# or from a Spark executor running inside a container.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 BASE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-cons-def"
 
-RAW_DIR = "data/raw"
-BRONZE_DIR = "data/bronze"
+RAW_DIR = str(PROJECT_ROOT / "data" / "raw")
+BRONZE_DIR = str(PROJECT_ROOT / "data" / "bronze")
+SPARK_JOBS_DIR = str(PROJECT_ROOT / "spark_jobs")
 
 ECO2MIX_NAME = "eco2mix-regional-cons-def"
 ECO2MIX_DATA_PATH = f"{BRONZE_DIR}/{ECO2MIX_NAME}"

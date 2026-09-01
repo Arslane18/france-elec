@@ -1,0 +1,57 @@
+services:
+  spark-master:
+    build: ./docker/spark
+    container_name: spark-master
+    network_mode: host
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - localhost
+      - --port
+      - "7077"
+      - --webui-port
+      - "8090"
+    volumes:
+      - .:/home/arsla/personal_projects/france-elec
+    working_dir: /home/arsla/personal_projects/france-elec
+
+  spark-worker-1:
+    build: ./docker/spark
+    container_name: spark-worker-1
+    network_mode: host
+    depends_on:
+      - spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - spark://localhost:7077
+      - --webui-port
+      - "8081"
+      - --cores
+      - "1"
+      - --memory
+      - "1g"
+    volumes:
+      - .:/home/arsla/personal_projects/france-elec
+    working_dir: /home/arsla/personal_projects/france-elec
+
+  spark-worker-2:
+    build: ./docker/spark
+    container_name: spark-worker-2
+    network_mode: host
+    depends_on:
+      - spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - spark://localhost:7077
+      - --webui-port
+      - "8082"
+      - --cores
+      - "1"
+      - --memory
+      - "1g"
+    volumes:
+      - .:/home/arsla/personal_projects/france-elec
+    working_dir: /home/arsla/personal_projects/france-elec

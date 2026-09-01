@@ -1,12 +1,17 @@
 BASE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-cons-def"
 
-ECO2MIX_DATA_PATH = "data/bronze/eco2mix-regional-cons-def"
+RAW_DIR = "data/raw"
+BRONZE_DIR = "data/bronze"
+
+ECO2MIX_NAME = "eco2mix-regional-cons-def"
+ECO2MIX_DATA_PATH = f"{BRONZE_DIR}/{ECO2MIX_NAME}"
 
 WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 WEATHER_HOURLY = ["temperature_2m", "precipitation"]
 
-WEATHER_DATA_PATH = "data/bronze/openmeteo"
+WEATHER_NAME = "openmeteo"
+WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
 
 #We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
 REGION_COORDS = {

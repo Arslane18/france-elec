@@ -1,5 +1,5 @@
 from airflow.sdk import dag, task
-from ingestion_utils import fetch_data_from_api, write_bytes_to_file, raw_weather_path, year_date_range, compute_years, fetch_and_store
+from ingestion_utils import raw_weather_path, year_date_range, compute_years, fetch_and_store
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.functions import lit

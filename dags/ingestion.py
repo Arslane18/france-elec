@@ -3,7 +3,7 @@ from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years, writ
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from datetime import timedelta
-from energy_pipeline.config import BASE_URL
+from energy_pipeline.config import BASE_URL, ECO2MIX_DATA_PATH
 
 @dag(
     schedule=None,
@@ -28,7 +28,7 @@ def simple_extraction():
         write_bytes_to_file(resp.content, path)
 
     @task
-    def split_hive_format(root_folder_name: str):
+    def split_hive_format():
         '''
         Split in hive format /year= /month= /day= for data storage'''
         spark = SparkSession.builder.appName("eco2mix-bronze").getOrCreate()
@@ -39,10 +39,10 @@ def simple_extraction():
             .withColumn("month", F.month("date_heure"))
             .withColumn("day", F.dayofmonth("date_heure"))
         )
-        df_with_parts.write.partitionBy("year", "month", "day").parquet(f"data/bronze/{root_folder_name}")
+        df_with_parts.write.partitionBy("year", "month", "day").parquet(ECO2MIX_DATA_PATH)
 
     years = compute_years()
-    fetch_year.expand(year=years) >> split_hive_format("eco2mix-regional-cons-def")
+    fetch_year.expand(year=years) >> split_hive_format()
 
 
 simple_extraction()

@@ -3,9 +3,9 @@ from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years, writ
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.functions import lit
-from datetime import timedelta, datetime
+from datetime import timedelta
 import json
-from energy_pipeline.config import WEATHER_URL, WEATHER_HOURLY, REGION_COORDS
+from energy_pipeline.config import WEATHER_URL, WEATHER_HOURLY, REGION_COORDS, WEATHER_DATA_PATH
 
 
 @dag(
@@ -56,7 +56,7 @@ def ingestion_weather():
             .withColumn("day", F.dayofmonth("time"))
         )
         df.write.partitionBy("region", "year", "month", "day").parquet(
-            "data/bronze/openmeteo", mode="overwrite"
+            WEATHER_DATA_PATH, mode="overwrite"
         )
 
 

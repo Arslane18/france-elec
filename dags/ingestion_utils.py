@@ -4,7 +4,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime import datetime
 
-from energy_pipeline.config import BASE_URL, WEATHER_URL
+from energy_pipeline.config import BASE_URL
 
 
 session = requests.Session()
@@ -28,11 +28,8 @@ def write_bytes_to_file(content: bytes, path: str) -> None:
     with open(path, "wb") as f:
         f.write(content)
 
-
-
 def raw_weather_path(region_name: str, year: int) -> str:
     return f"data/raw/openmeteo-{region_name}-{year}.json"
-
 
 def year_date_range(year: int) -> tuple[str, str]:
     '''Full calendar year, capped at today for the current year.'''

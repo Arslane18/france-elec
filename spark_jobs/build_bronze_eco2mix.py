@@ -1,4 +1,3 @@
-import argparse
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from spark_utils import parse_args

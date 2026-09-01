@@ -1,13 +1,7 @@
 import argparse
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--raw-glob", required=True, help="Glob pattern matching the raw eco2mix parquet files")
-    parser.add_argument("--output-dir", required=True, help="Output directory for the partitioned parquet dataset")
-    return parser.parse_args()
+from spark_utils import parse_args
 
 
 def main() -> None:

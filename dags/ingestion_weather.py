@@ -1,5 +1,5 @@
 from airflow.sdk import dag, task
-from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years, write_bytes_to_file, raw_weather_path, year_date_range
+from ingestion_utils import fetch_data_from_api, write_bytes_to_file, raw_weather_path, year_date_range, compute_years, fetch_and_store
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.functions import lit
@@ -17,11 +17,6 @@ def ingestion_weather():
     """
     Simple ingestion from Weather API
     """
-
-    @task
-    def compute_years() -> list[int]:
-        boundaries = retrieve_boundaries_years()
-        return list(range(boundaries["start_year"] + 1, boundaries["end_year"] + 1)) # We add 1 to start_year cause start_year of eco2mix is an empty year.
     
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_weather_data_by_year(year: int, region):
@@ -34,8 +29,7 @@ def ingestion_weather():
             "end_date": end_date,
             "hourly": WEATHER_HOURLY,
         }
-        resp = fetch_data_from_api(url=WEATHER_URL, params=params)
-        write_bytes_to_file(resp.content, raw_weather_path(region_name, year))
+        fetch_and_store(url=WEATHER_URL, params=params, path=raw_weather_path(region_name, year))
 
     @task
     def split_hive_format(year, region):

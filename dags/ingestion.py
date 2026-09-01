@@ -1,5 +1,5 @@
 from airflow.sdk import dag, task
-from ingestion_utils import fetch_data_from_api, retrieve_boundaries_years, write_bytes_to_file
+from ingestion_utils import fetch_data_from_api, write_bytes_to_file, compute_years, fetch_and_store
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from datetime import timedelta
@@ -15,17 +15,12 @@ def simple_extraction():
     Simple ingestion from Elec API 
     """
 
-    @task
-    def compute_years() -> list[int]:
-        boundaries = retrieve_boundaries_years()
-        return list(range(boundaries["start_year"] + 1, boundaries["end_year"] + 1)) # We add 1 to start_year cause start_year of eco2mix is an empty year.
 
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_year(year: int):
         params = {"where": f"year(date_heure) = {year}"}
-        resp = fetch_data_from_api(url=BASE_URL + "/exports/parquet", params=params)
         path = f"data/raw/eco2mix-regional-cons-def{year}.parquet"
-        write_bytes_to_file(resp.content, path)
+        fetch_and_store(url=BASE_URL + "/exports/parquet", params=params, path=path)
 
     @task
     def split_hive_format():

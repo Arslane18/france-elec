@@ -3,6 +3,7 @@ from typing import Dict, Any
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime import datetime
+from airflow.sdk import task
 
 from energy_pipeline.config import BASE_URL
 
@@ -17,12 +18,21 @@ def fetch_data_from_api(url: str, params: Dict[str,Any]):
     resp.raise_for_status()
     return resp
 
+@task
+def compute_years() -> list[int]:
+    boundaries = retrieve_boundaries_years()
+    return list(range(boundaries["start_year"] + 1, boundaries["end_year"] + 1)) # We add 1 to start_year cause start_year of eco2mix is an empty year.
+
 def retrieve_boundaries_years() -> Dict[str, int]:
     '''
     Retrieve boundaries years and send them as dict. Keys are start_year and end_year.'''
     params = {"select": "Min(year(date_heure)) as start_year, Max(year(date_heure)) as end_year"}
     fetched_result = fetch_data_from_api(url=BASE_URL + "/records", params=params).json()
     return fetched_result["results"][0]
+
+def fetch_and_store(url: str, params: dict, path: str) -> None:
+    resp = fetch_data_from_api(url=url, params=params)
+    write_bytes_to_file(resp.content, path)
 
 def write_bytes_to_file(content: bytes, path: str) -> None:
     with open(path, "wb") as f:

@@ -709,6 +709,8 @@ dependencies = [
     { name = "apache-airflow-providers-apache-spark" },
     { name = "fastapi" },
     { name = "graphviz" },
+    { name = "jours-feries-france" },
+    { name = "pandas" },
     { name = "polars" },
     { name = "pyarrow" },
     { name = "pyspark" },
@@ -727,6 +729,8 @@ requires-dist = [
     { name = "apache-airflow-providers-apache-spark", specifier = ">=6.3.2" },
     { name = "fastapi", specifier = ">=0.129.0,<0.137.0" },
     { name = "graphviz", specifier = ">=0.21" },
+    { name = "jours-feries-france", specifier = ">=0.7.0" },
+    { name = "pandas", specifier = ">=3.0.5" },
     { name = "polars", specifier = ">=1.44.1" },
     { name = "pyarrow", specifier = ">=25.0.1" },
     { name = "pyspark", specifier = ">=4.2.0" },
@@ -1082,6 +1086,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
 ]
+
+[[package]]
+name = "jours-feries-france"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/42/5365f1af7b0abca341581fbe25d7fa25127a01540a4ce7d7d501ae111281/jours_feries_france-0.7.0.tar.gz", hash = "sha256:6c702192ce794d1f1fd84913e80163067f407c546b17057712555148d4c770a2", size = 4915, upload-time = "2020-05-15T14:09:17.01Z" }
 
 [[package]]
 name = "json5"

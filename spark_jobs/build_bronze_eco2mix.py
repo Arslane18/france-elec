@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from spark_utils import parse_args
+from energy_pipeline.global_utils import parse_args
 
 
 def main() -> None:

@@ -1,11 +1,14 @@
 import requests
+import polars as pl
+
 from typing import Dict, Any
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from pathlib import Path
 from datetime import datetime
 from airflow.sdk import task
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME
+from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME, DAILY_MARKER
 
 
 session = requests.Session()
@@ -38,7 +41,7 @@ def write_bytes_to_file(content: bytes, path: str) -> None:
     with open(path, "wb") as f:
         f.write(content)
 
-def raw_weather_path(region_name: str, year: int) -> str:
+def raw_weather_path(region_name: str, year: int | str) -> str:
     return f"{RAW_DIR}/{WEATHER_NAME}-{region_name}-{year}.json"
 
 def raw_eco2mix_path(year: int) -> str:
@@ -47,6 +50,15 @@ def raw_eco2mix_path(year: int) -> str:
 def raw_eco2mix_glob() -> str:
     return f"{RAW_DIR}/{ECO2MIX_NAME}*.parquet"
 
+def raw_eco2mix_daily_path() -> str:
+    return f"{RAW_DIR}/{ECO2MIX_NAME}.parquet"
+
+def raw_weather_daily_path(region_name: str) -> str:
+    return raw_weather_path(region_name, DAILY_MARKER)
+
+def raw_weather_daily_glob_pattern() -> str:
+    return f"{WEATHER_NAME}-*-{DAILY_MARKER}.json"
+
 def year_date_range(year: int) -> tuple[str, str]:
     '''Full calendar year, capped at today for the current year.'''
     start_date = f"{year}-01-01"
@@ -54,3 +66,24 @@ def year_date_range(year: int) -> tuple[str, str]:
     if year == datetime.today().year:
         end_date = datetime.today().strftime("%Y-%m-%d")
     return start_date, end_date
+
+def write_bronze_partitioned(df: pl.DataFrame, date_col: str, path: str, region_partitioned: bool = False) -> None:
+    '''Derive year/month/day hive partitions from date_col and write, replacing any existing data in the touched partitions.'''
+    df = df.with_columns(
+        year=pl.col(date_col).dt.year(),
+        month=pl.col(date_col).dt.month(),
+        day=pl.col(date_col).dt.day(),
+    )
+    partition_cols = ["region", "year", "month", "day"] if region_partitioned else ["year", "month", "day"]
+    df.write_parquet(
+        path,
+        pyarrow_options={"partition_cols": partition_cols, "existing_data_behavior": "delete_matching"},
+        use_pyarrow=True,
+    )
+
+def get_latest_date(path):
+        base = Path(path)
+        last_year = max(int(p.name.split("=")[1]) for p in base.glob("year=*"))
+        last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
+        last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
+        return f"{last_year}-{last_month:02d}-{last_day:02d}"

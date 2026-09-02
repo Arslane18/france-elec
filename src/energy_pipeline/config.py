@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 BASE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-cons-def"
+RTE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-tr"
 
 RAW_DIR = str(PROJECT_ROOT / "data" / "raw")
 BRONZE_DIR = str(PROJECT_ROOT / "data" / "bronze")
@@ -21,6 +22,8 @@ WEATHER_HOURLY = ["temperature_2m", "precipitation"]
 
 WEATHER_NAME = "openmeteo"
 WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
+
+DAILY_MARKER = "daily"
 
 #We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
 REGION_COORDS = {

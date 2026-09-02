@@ -46,15 +46,8 @@ def ingestion_weather():
         driver_memory="512m",
         conf={
             "spark.sql.shuffle.partitions": "4",
-            # Read from the driver's own env at submit time and baked into the
-            # serialized job, so it must be set here explicitly (the image's
-            # PYSPARK_PYTHON alone does not reach the executor's worker exec).
             "spark.pyspark.python": "python3.13",
             "spark.pyspark.driver.python": "python3.13",
-            # v1 commits by renaming whole per-partition directories, which
-            # breaks when two executors both write the same partition value
-            # (e.g. two tasks both have "region=Normandie" rows) on a local
-            # filesystem. v2 commits file-by-file instead.
             "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
         },
         pool="spark_pool",

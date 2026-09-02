@@ -13,6 +13,7 @@ dependencies = [
     "fastapi>=0.129.0,<0.137.0",
     "graphviz>=0.21",
     "polars>=1.44.1",
+    "pyarrow>=25.0.1",
     "pyspark>=4.2.0",
     "python-dotenv>=1.2.3",
     "requests>=2.34.2",

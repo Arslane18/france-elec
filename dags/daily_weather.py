@@ -67,7 +67,7 @@ def daily_weather():
 
         df = pl.from_dicts(rows)
         df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"))
-        write_bronze_partitioned(df, date_col="time", path=WEATHER_DATA_PATH, region_partitioned=True)
+        write_bronze_partitioned(df, partition_date=pl.col("time"), path=WEATHER_DATA_PATH, region_partitioned=True)
     
     fetched_paths = fetch_weather_updates.expand(region=REGION_COORDS)
     write_weather_bronze(fetched_paths)

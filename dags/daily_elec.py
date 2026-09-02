@@ -33,8 +33,15 @@ def daily_eco2mix():
     def write_eco2mix_bronze(path):
         """Append the freshly fetched raw parquet to the eco2mix bronze table, partitioned by year/month/day."""
         df = pl.read_parquet(path)
-        df = df.with_columns(date=pl.col('date').str.to_datetime("%Y-%m-%d"))
-        write_bronze_partitioned(df, date_col="date", path=ECO2MIX_DATA_PATH)
+        # Used to have problems between dailys and backfills runs, this resolve the problem by standardizing schema
+        df = df.with_columns(
+            date_heure=pl.col('date_heure').dt.replace_time_zone(None).dt.cast_time_unit("ns"),
+        )
+        write_bronze_partitioned(
+            df,
+            partition_date=pl.col('date').str.to_datetime("%Y-%m-%d"),
+            path=ECO2MIX_DATA_PATH,
+        )
     
     target_date = get_latest_date(path=ECO2MIX_DATA_PATH)
     path = fetch_eco2mix_updates(target_date)

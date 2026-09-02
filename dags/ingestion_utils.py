@@ -67,12 +67,17 @@ def year_date_range(year: int) -> tuple[str, str]:
         end_date = datetime.today().strftime("%Y-%m-%d")
     return start_date, end_date
 
-def write_bronze_partitioned(df: pl.DataFrame, date_col: str, path: str, region_partitioned: bool = False) -> None:
-    '''Derive year/month/day hive partitions from date_col and write, replacing any existing data in the touched partitions.'''
+def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: str, region_partitioned: bool = False) -> None:
+    '''Derive year/month/day hive partitions from partition_date and write, replacing any existing data in the touched partitions.
+
+    partition_date is an expression, not a column name, so callers can derive the
+    partition value (e.g. by parsing a string column) without overwriting a source
+    column that should stay in its original raw form in bronze.
+    '''
     df = df.with_columns(
-        year=pl.col(date_col).dt.year(),
-        month=pl.col(date_col).dt.month(),
-        day=pl.col(date_col).dt.day(),
+        year=partition_date.dt.year(),
+        month=partition_date.dt.month(),
+        day=partition_date.dt.day(),
     )
     partition_cols = ["region", "year", "month", "day"] if region_partitioned else ["year", "month", "day"]
     df.write_parquet(

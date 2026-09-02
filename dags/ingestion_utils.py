@@ -48,6 +48,21 @@ def raw_eco2mix_path(year: int) -> str:
 def raw_eco2mix_glob() -> str:
     return f"{RAW_DIR}/{ECO2MIX_NAME}*.parquet"
 
+def raw_eco2mix_daily_path() -> str:
+    return f"{RAW_DIR}/{ECO2MIX_NAME}.parquet"
+
+# Placeholder used instead of a real year for daily incremental raw weather
+# files, so a day's fetch doesn't collide with a backfilled yearly one. Kept
+# here so the writer (raw_weather_daily_path) and reader (raw_weather_daily_glob_pattern)
+# always agree on the convention.
+DAILY_YEAR_MARKER = 0
+
+def raw_weather_daily_path(region_name: str) -> str:
+    return raw_weather_path(region_name, DAILY_YEAR_MARKER)
+
+def raw_weather_daily_glob_pattern() -> str:
+    return f"{WEATHER_NAME}-*-{DAILY_YEAR_MARKER}.json"
+
 def year_date_range(year: int) -> tuple[str, str]:
     '''Full calendar year, capped at today for the current year.'''
     start_date = f"{year}-01-01"

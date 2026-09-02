@@ -23,6 +23,8 @@ WEATHER_HOURLY = ["temperature_2m", "precipitation"]
 WEATHER_NAME = "openmeteo"
 WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
 
+DAILY_YEAR_MARKER = 0
+
 #We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
 REGION_COORDS = {
     "Auvergne-Rhône-Alpes": (45.7640, 4.8357),      # Lyon

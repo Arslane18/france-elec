@@ -1,12 +1,13 @@
 import requests
+
 from typing import Dict, Any
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from pathlib import Path
 from datetime import datetime
 from airflow.sdk import task
-from pathlib import Path
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME
+from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME, DAILY_YEAR_MARKER
 
 
 session = requests.Session()
@@ -51,12 +52,6 @@ def raw_eco2mix_glob() -> str:
 def raw_eco2mix_daily_path() -> str:
     return f"{RAW_DIR}/{ECO2MIX_NAME}.parquet"
 
-# Placeholder used instead of a real year for daily incremental raw weather
-# files, so a day's fetch doesn't collide with a backfilled yearly one. Kept
-# here so the writer (raw_weather_daily_path) and reader (raw_weather_daily_glob_pattern)
-# always agree on the convention.
-DAILY_YEAR_MARKER = 0
-
 def raw_weather_daily_path(region_name: str) -> str:
     return raw_weather_path(region_name, DAILY_YEAR_MARKER)
 
@@ -77,9 +72,3 @@ def get_latest_date(path):
         last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
         last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
         return f"{last_year}-{last_month:02d}-{last_day:02d}"
-
-def region_name_from_filename(path: Path) -> str:
-    # openmeteo-<region>-<year>.json ; region can itself contain - in its name, year is always 4 digits straight.
-    stem = path.stem.removeprefix("openmeteo-")
-    region_name, _, _year = stem.rpartition("-")
-    return region_name

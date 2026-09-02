@@ -1,11 +1,10 @@
 import requests
-import time
-import json
 from typing import Dict, Any
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime import datetime
 from airflow.sdk import task
+from pathlib import Path
 
 from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME
 
@@ -56,3 +55,16 @@ def year_date_range(year: int) -> tuple[str, str]:
     if year == datetime.today().year:
         end_date = datetime.today().strftime("%Y-%m-%d")
     return start_date, end_date
+
+def get_latest_date(path):
+        base = Path(path)
+        last_year = max(int(p.name.split("=")[1]) for p in base.glob("year=*"))
+        last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
+        last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
+        return f"{last_year}-{last_month:02d}-{last_day:02d}"
+
+def region_name_from_filename(path: Path) -> str:
+    # openmeteo-<region>-<year>.json ; region can itself contain - in its name, year is always 4 digits straight.
+    stem = path.stem.removeprefix("openmeteo-")
+    region_name, _, _year = stem.rpartition("-")
+    return region_name

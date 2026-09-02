@@ -23,7 +23,7 @@ WEATHER_HOURLY = ["temperature_2m", "precipitation"]
 WEATHER_NAME = "openmeteo"
 WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
 
-DAILY_YEAR_MARKER = 0
+DAILY_MARKER = "daily"
 
 #We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
 REGION_COORDS = {

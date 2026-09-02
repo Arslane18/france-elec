@@ -12,6 +12,7 @@ from ingestion_utils import (
     get_latest_date,
     raw_weather_daily_path,
     raw_weather_daily_glob_pattern,
+    write_bronze_partitioned,
 )
 from energy_pipeline.config import (
     REGION_COORDS, 
@@ -35,9 +36,9 @@ def daily_weather():
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_weather_updates(region):
         """Fetch hourly weather data for one region from the last ingested date up to today, and write it as raw JSON."""
-        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region=Bretagne")
-        end_date = date.today().isoformat()
         region_name, (latitude, longitude) = region
+        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region={region_name}")
+        end_date = date.today().isoformat()
         params = {
             "latitude": latitude,
             "longitude": longitude,
@@ -61,16 +62,12 @@ def daily_weather():
                 row["region"] = region_name
                 rows.append(row)
 
+        if not rows:
+            return
+
         df = pl.from_dicts(rows)
-        df = df.with_columns(
-            time = pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"),
-        )
-        df = df.with_columns(
-            year = pl.col('time').dt.year(),
-            month = pl.col('time').dt.month(),
-            day = pl.col('time').dt.day(),
-        )
-        df.write_parquet(WEATHER_DATA_PATH, pyarrow_options={"partition_cols": ["region", "year", "month", "day"]}, use_pyarrow=True)
+        df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"))
+        write_bronze_partitioned(df, date_col="time", path=WEATHER_DATA_PATH, region_partitioned=True)
     
     fetched_paths = fetch_weather_updates.expand(region=REGION_COORDS)
     write_weather_bronze(fetched_paths)

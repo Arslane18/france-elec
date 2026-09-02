@@ -3,9 +3,10 @@ import polars as pl
 from datetime import timedelta
 from airflow.sdk import dag, task
 from ingestion_utils import (
-    fetch_and_store, 
-    get_latest_date, 
-    raw_eco2mix_daily_path
+    fetch_and_store,
+    get_latest_date,
+    raw_eco2mix_daily_path,
+    write_bronze_partitioned,
 )
 from energy_pipeline.config import ECO2MIX_DATA_PATH, RTE_URL
 
@@ -32,12 +33,8 @@ def daily_eco2mix():
     def write_eco2mix_bronze(path):
         """Append the freshly fetched raw parquet to the eco2mix bronze table, partitioned by year/month/day."""
         df = pl.read_parquet(path)
-        df = df.with_columns(
-            year = pl.col('date').str.to_datetime("%Y-%m-%d").dt.year(),
-            month = pl.col('date').str.to_datetime("%Y-%m-%d").dt.month(),
-            day = pl.col('date').str.to_datetime("%Y-%m-%d").dt.day(),
-        )
-        df.write_parquet(ECO2MIX_DATA_PATH, pyarrow_options={"partition_cols": ["year", "month", "day"]}, use_pyarrow=True)
+        df = df.with_columns(date=pl.col('date').str.to_datetime("%Y-%m-%d"))
+        write_bronze_partitioned(df, date_col="date", path=ECO2MIX_DATA_PATH)
     
     target_date = get_latest_date(path=ECO2MIX_DATA_PATH)
     path = fetch_eco2mix_updates(target_date)

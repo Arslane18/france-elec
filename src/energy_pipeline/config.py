@@ -15,6 +15,7 @@ SPARK_JOBS_DIR = str(PROJECT_ROOT / "spark_jobs")
 
 ECO2MIX_NAME = "eco2mix-regional-cons-def"
 ECO2MIX_DATA_PATH = f"{BRONZE_DIR}/{ECO2MIX_NAME}"
+ECO2MIX_SELECT_COLUMNS = "date_heure, date, code_insee_region, libelle_region, nature, consommation"
 
 WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
 

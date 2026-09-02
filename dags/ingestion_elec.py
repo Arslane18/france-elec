@@ -8,7 +8,7 @@ from ingestion_utils import (
     raw_eco2mix_path, 
     raw_eco2mix_glob
 )
-from energy_pipeline.config import BASE_URL, ECO2MIX_DATA_PATH, SPARK_JOBS_DIR
+from energy_pipeline.config import BASE_URL, ECO2MIX_DATA_PATH, ECO2MIX_SELECT_COLUMNS, SPARK_JOBS_DIR
 
 
 
@@ -23,7 +23,7 @@ def backfill_eco2mix():
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_eco2mix_year(year: int):
         """Fetch one full year of eco2mix consumption records and write it as raw parquet."""
-        params = {"where": f"year(date_heure) = {year}"}
+        params = {"select": ECO2MIX_SELECT_COLUMNS, "where": f"year(date_heure) = {year}"}
         fetch_and_store(url=BASE_URL + "/exports/parquet", params=params, path=raw_eco2mix_path(year))
 
     build_bronze_eco2mix = SparkSubmitOperator(

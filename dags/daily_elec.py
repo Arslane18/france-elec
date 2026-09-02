@@ -8,7 +8,7 @@ from ingestion_utils import (
     raw_eco2mix_daily_path,
     write_bronze_partitioned,
 )
-from energy_pipeline.config import ECO2MIX_DATA_PATH, RTE_URL
+from energy_pipeline.config import ECO2MIX_DATA_PATH, ECO2MIX_SELECT_COLUMNS, RTE_URL
 
 
 
@@ -24,7 +24,7 @@ def daily_eco2mix():
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_eco2mix_updates(target_date) -> str:
         """Fetch eco2mix records more recent than target_date and write them as raw parquet."""
-        params = {"where": f"date_heure > date'{target_date}'"}
+        params = {"select": ECO2MIX_SELECT_COLUMNS, "where": f"date_heure > date'{target_date}'"}
         path = raw_eco2mix_daily_path()
         fetch_and_store(url=RTE_URL + "/exports/parquet", params=params, path=path)
         return path

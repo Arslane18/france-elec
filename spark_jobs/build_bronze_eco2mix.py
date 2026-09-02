@@ -2,7 +2,6 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from energy_pipeline.global_utils import parse_args
 
-
 def main() -> None:
     args = parse_args()
 
@@ -17,8 +16,8 @@ def main() -> None:
         df = spark.read.parquet(args.raw_glob)
         # Partitioned by eco2mix's own local calendar day (the `date` field), not
         # by date_heure's UTC day, so this matches the daily Polars job (which
-        # partitions stead of disagreeing with it for the ~2h/day
-        # where the UTC day and the Frthe same way) inench local day differ.
+        # partitions the same way) instead of disagreeing with it for the ~2h/day
+        # where the UTC day and the French local day differ.
         parsed_date = F.to_date("date", "yyyy-MM-dd")
         df_with_parts = (
             df

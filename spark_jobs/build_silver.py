@@ -51,12 +51,10 @@ def main() -> None:
     join_df = (
         join_df
         .withColumn("year", F.year("date_heure"))
-        .withColumn("month", F.month("date_heure"))
-        .withColumn("day", F.dayofmonth("date_heure"))
     )
 
     join_df.write.partitionBy(
-                "region", "year", "month", "day"
+                "region", "year"
             ).parquet(args.output_dir, mode="overwrite")
     
 if __name__ == "__main__":

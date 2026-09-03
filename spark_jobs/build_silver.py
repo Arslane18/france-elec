@@ -1,5 +1,7 @@
 import argparse
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+from typing import Optional
 
 
 def parse_args() -> argparse.Namespace:
@@ -9,21 +11,48 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True)
     return parser.parse_args()
 
+def clean_eco2mix(df):
+    df = df.withColumnRenamed("libelle_region", "region")
+    return agg_temporelle(df, ["region"], "consommation")
 
-def read_eco2mix(spark, path: str, mode: str):
+def clean_meteo(df):
+    df = df.withColumnRenamed("time", "date_heure")
+    return df
 
-
-def read_openmeteo(spark, path: str, mode: str):
-
-
+def agg_temporelle(
+    df,
+    group_cols: list[str],
+    col_to_agg: str,
+    date_col: str = "date_heure",
+    granularity: str = "hour",
+    agg_func=F.avg,
+    alias: str | None = None,
+):
+    alias = alias or col_to_agg
+    return (
+        df
+        .withColumn(date_col, F.date_trunc(granularity, F.col(date_col)))
+        .groupBy(*group_cols, date_col)
+        .agg(agg_func(col_to_agg).alias(alias))
+    )
 
 def main() -> None:
     args = parse_args()
     spark = SparkSession.builder.appName("silver_layer").getOrCreate()
+    
 
-    conso_df = read_eco2mix(spark, args.conso_path, args.mode)
-    meteo_df = read_openmeteo(spark, args.meteo_path, args.mode)
+    eco2mix_df = spark.read.parquet(args.eco2mix_path)
+    meteo_df = spark.read.parquet(args.meteo_path)
 
+    clean_eco2mix_df = clean_eco2mix(eco2mix_df)
+    clean_meteo_df = clean_meteo(meteo_df)
+    join_df = clean_eco2mix_df.join(clean_meteo_df, on = ["date_heure", "region"], how="left")
 
+    (
+        join_df.write.mode("overwrite")
+        .partitionBy("year", "month", "day")
+        .parquet(args.output)
+    )
+    
 if __name__ == "__main__":
     main()

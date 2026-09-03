@@ -50,7 +50,7 @@ def main() -> None:
 
     (
         join_df.write.mode("overwrite")
-        .partitionBy("year", "month", "day")
+        .partitionBy("region", "year", "month", "day")
         .parquet(args.output)
     )
     

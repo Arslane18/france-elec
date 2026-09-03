@@ -11,6 +11,7 @@ RTE_URL = "https://reseaux-energies-rte.opendatasoft.com/api/explore/v2.1/catalo
 
 RAW_DIR = str(PROJECT_ROOT / "data" / "raw")
 BRONZE_DIR = str(PROJECT_ROOT / "data" / "bronze")
+SILVER_DIR = str(PROJECT_ROOT / "data" / "silver")
 SPARK_JOBS_DIR = str(PROJECT_ROOT / "spark_jobs")
 
 ECO2MIX_NAME = "eco2mix-regional-cons-def"
@@ -25,6 +26,10 @@ WEATHER_NAME = "openmeteo"
 WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
 
 DAILY_MARKER = "daily"
+
+# The joined eco2mix + weather (+ later, calendar) table — one dataset, not one
+# per source like bronze, since the sources are already merged by this point.
+ECO2MIX_WEATHER_DATA_PATH = f"{SILVER_DIR}/eco2mix_weather"
 
 #We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
 REGION_COORDS = {

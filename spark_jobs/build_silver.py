@@ -8,7 +8,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--eco2mix-path", required=True)
     parser.add_argument("--openmeteo-path", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("--output-dir", required=True)
     return parser.parse_args()
 
 def clean_eco2mix(df):
@@ -42,17 +42,22 @@ def main() -> None:
     
 
     eco2mix_df = spark.read.parquet(args.eco2mix_path)
-    meteo_df = spark.read.parquet(args.meteo_path)
+    meteo_df = spark.read.parquet(args.openmeteo_path)
 
     clean_eco2mix_df = clean_eco2mix(eco2mix_df)
     clean_meteo_df = clean_meteo(meteo_df)
     join_df = clean_eco2mix_df.join(clean_meteo_df, on = ["date_heure", "region"], how="left")
 
-    (
-        join_df.write.mode("overwrite")
-        .partitionBy("region", "year", "month", "day")
-        .parquet(args.output)
+    join_df = (
+        join_df
+        .withColumn("year", F.year("date_heure"))
+        .withColumn("month", F.month("date_heure"))
+        .withColumn("day", F.dayofmonth("date_heure"))
     )
+
+    join_df.write.partitionBy(
+                "region", "year", "month", "day"
+            ).parquet(args.output_dir, mode="overwrite")
     
 if __name__ == "__main__":
     main()

@@ -23,8 +23,8 @@ def build_dataframe(start_year: int, end_year: int) -> pd.DataFrame:
                     {
                         "region_code": region_code,
                         "date": date,
-                        "annee": year,
                         "jour_ferie": name,
+                        "is_holiday": 1,
                     }
                 )
 

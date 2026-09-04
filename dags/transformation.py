@@ -4,6 +4,7 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 from energy_pipeline.config import (
     ECO2MIX_DATA_PATH,
     WEATHER_DATA_PATH,
+    HOLIDAY_PATH,
     SPARK_JOBS_DIR, 
     ECO2MIX_WEATHER_DATA_PATH, 
 )
@@ -21,7 +22,7 @@ def data_transformation():
         task_id="build_silver",
         conn_id="spark_standalone",
         application=f"{SPARK_JOBS_DIR}/build_silver.py",
-        application_args=["--eco2mix-path", ECO2MIX_DATA_PATH, "--openmeteo-path", WEATHER_DATA_PATH, "--output-dir", ECO2MIX_WEATHER_DATA_PATH],
+        application_args=["--eco2mix-path", ECO2MIX_DATA_PATH, "--openmeteo-path", WEATHER_DATA_PATH, "--output-dir", ECO2MIX_WEATHER_DATA_PATH, "--holiday-path", HOLIDAY_PATH],
         total_executor_cores=1,
         executor_cores=1,
         executor_memory="1024m",

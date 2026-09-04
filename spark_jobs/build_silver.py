@@ -8,6 +8,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eco2mix-path", required=True)
     parser.add_argument("--openmeteo-path", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--start-date", required=False)
     return parser.parse_args()
 
 def clean_eco2mix(df):
@@ -37,11 +38,15 @@ def agg_temporelle(
 
 def main() -> None:
     args = parse_args()
-    spark = SparkSession.builder.appName("silver_layer").getOrCreate()
+    spark = SparkSession.builder.appName("silver_layer").config("spark.sql.sources.partitionOverwriteMode", "dynamic").getOrCreate()
     
 
     eco2mix_df = spark.read.parquet(args.eco2mix_path)
     meteo_df = spark.read.parquet(args.openmeteo_path)
+
+    if args.start_date:
+        eco2mix_df = eco2mix_df.filter(F.col("date_heure") >= args.start_date)
+        meteo_df = meteo_df.filter(F.col("time") >= args.start_date)
 
     clean_eco2mix_df = clean_eco2mix(eco2mix_df)
     clean_meteo_df = clean_meteo(meteo_df)

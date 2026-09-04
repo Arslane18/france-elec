@@ -18,13 +18,13 @@ def build_dataframe(start_year: int, end_year: int) -> pd.DataFrame:
         }
         for region, (lat, lon) in REGION_COORDS.items():
             zone = REGION_ZONE[region]
-            for date, name in holidays_by_zone[zone].items():
+            for name, date in holidays_by_zone[zone].items():
                 rows.append(
                     {
                         "region": region,
-                        "date": name,
+                        "date": date,
                         "annee": year,
-                        "jour_ferie": date,
+                        "jour_ferie": name,
                     }
                 )
 

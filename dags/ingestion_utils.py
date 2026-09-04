@@ -3,7 +3,7 @@ import polars as pl
 
 from typing import Dict, Any
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow.sdk import task
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -92,3 +92,11 @@ def get_latest_date(path):
         last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
         last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
         return f"{last_year}-{last_month:02d}-{last_day:02d}"
+
+
+@task
+def resolve_target_date( delta_day: int, **context) -> str:
+    target = context["params"].get("target_date")
+    if target:
+        return target
+    return (context["logical_date"] - timedelta(days=delta_day)).date().isoformat()

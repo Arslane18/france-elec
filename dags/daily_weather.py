@@ -15,10 +15,10 @@ from ingestion_utils import (
     write_bronze_partitioned,
 )
 from energy_pipeline.config import (
-    REGION_COORDS, 
-    WEATHER_HOURLY, 
-    WEATHER_URL, 
-    WEATHER_DATA_PATH, 
+    REGION_COORDS,
+    WEATHER_HOURLY,
+    WEATHER_URL,
+    WEATHER_DATA_PATH,
     RAW_DIR
 )
 
@@ -36,8 +36,8 @@ def daily_weather():
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_weather_updates(region):
         """Fetch hourly weather data for one region from the last ingested date up to today, and write it as raw JSON."""
-        region_name, (latitude, longitude) = region
-        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region={region_name}")
+        region_code, (latitude, longitude) = region
+        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region={region_code}")
         end_date = date.today().isoformat()
         params = {
             "latitude": latitude,
@@ -46,7 +46,7 @@ def daily_weather():
             "end_date": end_date,
             "hourly": WEATHER_HOURLY,
         }
-        fetch_and_store(url=WEATHER_URL, params=params, path=raw_weather_daily_path(region_name))
+        fetch_and_store(url=WEATHER_URL, params=params, path=raw_weather_daily_path(region_code))
 
     @task
     def write_weather_bronze(_fetched_paths):
@@ -54,12 +54,12 @@ def daily_weather():
         # _fetched_paths is unused: it only forces this task to depend on every fetch_weather_updates instance.
         rows = []
         for path in sorted(Path(RAW_DIR).glob(pattern=raw_weather_daily_glob_pattern())):
-            region_name = region_name_from_filename(path)
+            region_code = region_name_from_filename(path)
             with open(path, "r") as file:
                 hourly = json.load(file)["hourly"]
             for values in zip(*hourly.values()):
                 row = dict(zip(hourly.keys(), values))
-                row["region"] = region_name
+                row["region_code"] = region_code
                 rows.append(row)
 
         if not rows:
@@ -69,7 +69,7 @@ def daily_weather():
         df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"))
         write_bronze_partitioned(df, partition_date=pl.col("time"), path=WEATHER_DATA_PATH, region_partitioned=True)
     
-    fetched_paths = fetch_weather_updates.expand(region=REGION_COORDS)
+    fetched_paths = fetch_weather_updates.expand(region=list(REGION_COORDS.items()))
     write_weather_bronze(fetched_paths)
 
 daily_weather()

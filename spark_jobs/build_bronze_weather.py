@@ -15,12 +15,12 @@ def main() -> None:
     try:
         rows = []
         for path in sorted(raw_dir.glob("openmeteo-*.json")):
-            region_name = region_name_from_filename(path)
+            region_code = region_name_from_filename(path)
             with open(path, "r") as file:
                 hourly = json.load(file)["hourly"]
             for values in zip(*hourly.values()):
                 row = dict(zip(hourly.keys(), values))
-                row["region"] = region_name
+                row["region_code"] = region_code
                 rows.append(row)
 
         df = (
@@ -31,7 +31,7 @@ def main() -> None:
             .withColumn("day", F.dayofmonth("time"))
         )
         df.write.partitionBy(
-            "region", "year", "month", "day"
+            "region_code", "year", "month", "day"
         ).parquet(args.output_dir, mode="overwrite")
     finally:
         spark.stop()

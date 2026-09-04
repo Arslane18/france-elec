@@ -5,7 +5,7 @@ from jours_feries_france import JoursFeries
 from energy_pipeline.config import REGION_COORDS
 
 REGION_ZONE = {
-    region: "Alsace-Moselle" if region == "Grand Est" else "Métropole"
+    region: "Alsace-Moselle" if region == 44 else "Métropole"
     for region in REGION_COORDS
 }
 
@@ -16,21 +16,21 @@ def build_dataframe(start_year: int, end_year: int) -> pd.DataFrame:
             zone: JoursFeries.for_year(year, zone=zone)
             for zone in set(REGION_ZONE.values())
         }
-        for region, (lat, lon) in REGION_COORDS.items():
-            zone = REGION_ZONE[region]
-            for date, name in holidays_by_zone[zone].items():
+        for region_code in REGION_COORDS.keys():
+            zone = "Alsace-Moselle" if region_code == 44 else "Métropole"
+            for name, date in holidays_by_zone[zone].items():
                 rows.append(
                     {
-                        "region": region,
-                        "date": name,
+                        "region_code": region_code,
+                        "date": date,
                         "annee": year,
-                        "jour_ferie": date,
+                        "jour_ferie": name,
                     }
                 )
 
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"])
-    return df.sort_values(["region", "date"]).reset_index(drop=True)
+    return df.sort_values(["region_code", "date"]).reset_index(drop=True)
 
 
 def main():

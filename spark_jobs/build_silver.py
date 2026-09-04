@@ -1,7 +1,6 @@
 import argparse
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from typing import Optional
 
 
 def parse_args() -> argparse.Namespace:
@@ -13,11 +12,12 @@ def parse_args() -> argparse.Namespace:
 
 def clean_eco2mix(df):
     df = df.withColumnRenamed("libelle_region", "region")
-    return agg_temporelle(df, ["region"], "consommation")
+    df = df.withColumn("region_code", F.col("code_insee_region").cast("int"))
+    return agg_temporelle(df, ["region", "region_code"], "consommation")
 
 def clean_meteo(df):
     df = df.withColumnRenamed("time", "date_heure")
-    return df
+    return df.drop("region")
 
 def agg_temporelle(
     df,
@@ -46,7 +46,7 @@ def main() -> None:
 
     clean_eco2mix_df = clean_eco2mix(eco2mix_df)
     clean_meteo_df = clean_meteo(meteo_df)
-    join_df = clean_eco2mix_df.join(clean_meteo_df, on = ["date_heure", "region"], how="left")
+    join_df = clean_eco2mix_df.join(clean_meteo_df, on = ["date_heure", "region_code"], how="left")
 
     join_df = (
         join_df
@@ -54,7 +54,7 @@ def main() -> None:
     )
 
     join_df.write.partitionBy(
-                "region", "year"
+                "region_code", "year"
             ).parquet(args.output_dir, mode="overwrite")
     
 if __name__ == "__main__":

@@ -41,8 +41,8 @@ def write_bytes_to_file(content: bytes, path: str) -> None:
     with open(path, "wb") as f:
         f.write(content)
 
-def raw_weather_path(region_name: str, year: int | str) -> str:
-    return f"{RAW_DIR}/{WEATHER_NAME}-{region_name}-{year}.json"
+def raw_weather_path(region_code: int, year: int | str) -> str:
+    return f"{RAW_DIR}/{WEATHER_NAME}-{region_code}-{year}.json"
 
 def raw_eco2mix_path(year: int) -> str:
     return f"{RAW_DIR}/{ECO2MIX_NAME}{year}.parquet"
@@ -53,8 +53,8 @@ def raw_eco2mix_glob() -> str:
 def raw_eco2mix_daily_path() -> str:
     return f"{RAW_DIR}/{ECO2MIX_NAME}.parquet"
 
-def raw_weather_daily_path(region_name: str) -> str:
-    return raw_weather_path(region_name, DAILY_MARKER)
+def raw_weather_daily_path(region_code: int) -> str:
+    return raw_weather_path(region_code, DAILY_MARKER)
 
 def raw_weather_daily_glob_pattern() -> str:
     return f"{WEATHER_NAME}-*-{DAILY_MARKER}.json"

@@ -31,7 +31,7 @@ def backfill_weather():
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_weather_year(year: int, region):
         """Fetch one full year of hourly weather data for a single region and write it as raw JSON."""
-        region_name, (latitude, longitude) = region
+        region_code, (latitude, longitude) = region
         start_date, end_date = year_date_range(year)
         params = {
             "latitude": latitude,
@@ -40,7 +40,7 @@ def backfill_weather():
             "end_date": end_date,
             "hourly": WEATHER_HOURLY,
         }
-        fetch_and_store(url=WEATHER_URL, params=params, path=raw_weather_path(region_name, year))
+        fetch_and_store(url=WEATHER_URL, params=params, path=raw_weather_path(region_code, year))
 
     build_bronze_weather = SparkSubmitOperator(
         task_id="build_bronze_weather",
@@ -61,6 +61,6 @@ def backfill_weather():
     )
 
     years = compute_years()
-    fetch_weather_year.expand(year=years, region=REGION_COORDS) >> build_bronze_weather
+    fetch_weather_year.expand(year=years, region=list(REGION_COORDS.items())) >> build_bronze_weather
 
 backfill_weather()

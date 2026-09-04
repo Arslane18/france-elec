@@ -11,9 +11,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def clean_eco2mix(df):
-    df = df.withColumnRenamed("libelle_region", "region")
     df = df.withColumn("region_code", F.col("code_insee_region").cast("int"))
-    return agg_temporelle(df, ["region", "region_code"], "consommation")
+    return agg_temporelle(df, ["region_code"], "consommation")
 
 def clean_meteo(df):
     df = df.withColumnRenamed("time", "date_heure")

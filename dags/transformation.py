@@ -1,13 +1,6 @@
-from datetime import timedelta
-from airflow.sdk import dag, task
+from airflow.sdk import dag
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
-from ingestion_utils import (
-    compute_years, 
-    fetch_and_store, 
-    raw_eco2mix_path, 
-    raw_eco2mix_glob
-)
 from energy_pipeline.config import (
     ECO2MIX_DATA_PATH,
     WEATHER_DATA_PATH,

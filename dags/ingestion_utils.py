@@ -79,7 +79,7 @@ def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: st
         month=partition_date.dt.month(),
         day=partition_date.dt.day(),
     )
-    partition_cols = ["region", "year", "month", "day"] if region_partitioned else ["year", "month", "day"]
+    partition_cols = ["region_code", "year", "month", "day"] if region_partitioned else ["year", "month", "day"]
     df.write_parquet(
         path,
         pyarrow_options={"partition_cols": partition_cols, "existing_data_behavior": "delete_matching"},

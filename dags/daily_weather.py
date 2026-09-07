@@ -37,7 +37,7 @@ def daily_weather():
     def fetch_weather_updates(region):
         """Fetch hourly weather data for one region from the last ingested date up to today, and write it as raw JSON."""
         region_code, (latitude, longitude) = region
-        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region={region_code}")
+        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region_code={region_code}")
         end_date = date.today().isoformat()
         params = {
             "latitude": latitude,

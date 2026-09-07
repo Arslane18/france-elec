@@ -29,7 +29,6 @@ def build_dataframe(start_year: int, end_year: int) -> pd.DataFrame:
                 )
 
     df = pd.DataFrame(rows)
-    df["date"] = pd.to_datetime(df["date"])
     return df.sort_values(["region_code", "date"]).reset_index(drop=True)
 
 

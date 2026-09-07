@@ -8,6 +8,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--openmeteo-path", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--start-date", required=False)
+    parser.add_argument("--holiday-path", required=False)
     return parser.parse_args()
 
 def clean_eco2mix(df):
@@ -19,7 +20,9 @@ def clean_meteo(df):
     return df
 
 def clean_holiday(df):
-    df = df.withColumnRenamed("date", "date_heure")
+    # Kept at day grain ("date", not renamed to "date_heure"): a holiday applies to every
+    # hour of that day, so the caller joins it against date_heure truncated to a date,
+    # not against the hourly timestamp directly.
     return df.drop("jour_ferie")
 
 

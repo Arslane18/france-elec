@@ -10,6 +10,7 @@ requires-python = ">=3.13.15,<3.14"
 dependencies = [
     "apache-airflow>=3.3.1",
     "apache-airflow-providers-apache-spark>=6.3.2",
+    "apache-airflow-providers-snowflake>=6.5.1",
     "fastapi>=0.129.0,<0.137.0",
     "graphviz>=0.21",
     "jours-feries-france>=0.7.0",

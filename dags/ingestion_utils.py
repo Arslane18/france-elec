@@ -109,15 +109,15 @@ def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: st
     ]
 
 def resolve_latest_partition_date(path):
-        '''
-        Retrieve the latest date from a local file structure organized as
-        year=YYYY/month=MM/day=DD. 
-        '''
-        base = Path(path)
-        last_year = max(int(p.name.split("=")[1]) for p in base.glob("year=*"))
-        last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
-        last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
-        return f"{last_year}-{last_month:02d}-{last_day:02d}"
+    '''
+    Retrieve the latest date from a local file structure organized as
+    year=YYYY/month=MM/day=DD. 
+    '''
+    base = Path(path)
+    last_year = max(int(p.name.split("=")[1]) for p in base.glob("year=*"))
+    last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
+    last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
+    return f"{last_year}-{last_month:02d}-{last_day:02d}"
 
 @task
 def resolve_target_date(delta_day: int, **context) -> str:

@@ -114,7 +114,7 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
 
     RANGE BETWEEN INTERVAL '7 days' (time-based, not ROWS/168) and a self-join on
     DATE_HEURE - 7 days (not a positional LAG) because the hourly series can have gaps
-    (see 04_data_quality_checks.sql) -- a row-count-based offset would drift silently
+    (see 04_data_test.sql) -- a row-count-based offset would drift silently
     whenever an hour is missing.
 
     If start_date is given, the source is scoped to DATE_HEURE >= start_date (e.g.

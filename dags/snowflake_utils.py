@@ -101,43 +101,86 @@ def merge_silver_to_snowflake(local_path: str) -> None:
 
 @task
 def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
-    """MERGE SILVER.CONSO_METEO_HORAIRE into GOLD.FACT_CONSOMMATION_HORAIRE.
+    """MERGE SILVER.CONSO_METEO_HORAIRE into GOLD.FACT_CONSOMMATION_HORAIRE, including the
+    7-day rolling average and the J-7 lag.
 
     Snowflake-to-Snowflake, no PUT/staging needed since both tables already live in the
-    warehouse. If start_date is given, scopes the source read to DATE_HEURE >= start_date
-    (e.g. daily_data_transformation's own rolling window) instead of rescanning the whole
-    silver history -- and re-comparing it row by row against the fact table -- on every run.
-    Leave it unset for a one-off full rebuild (mirrors load_bronze_to_snowflake's backfill case).
+    warehouse. Both features are computed here rather than in Spark: the daily job only
+    ever reads a narrow local rolling window (daily_data_transformation's own
+    resolve_target_date(delta_day=7)), which isn't enough history for a correct 7-day
+    average on the rows at the start of that window -- SILVER.CONSO_METEO_HORAIRE holds
+    the full accumulated history, so windowing here is always correct regardless of how
+    narrow the calling run's own window is.
+
+    RANGE BETWEEN INTERVAL '7 days' (time-based, not ROWS/168) and a self-join on
+    DATE_HEURE - 7 days (not a positional LAG) because the hourly series can have gaps
+    (see 04_data_quality_checks.sql) -- a row-count-based offset would drift silently
+    whenever an hour is missing.
+
+    If start_date is given, the source is scoped to DATE_HEURE >= start_date (e.g.
+    daily_data_transformation's own rolling window) instead of rescanning/re-comparing the
+    whole silver history against the fact table on every run. The window read itself starts
+    7 days earlier than that (start_date - 7d) to give the rolling average/lag enough
+    runway for the rows right at the start of the scoped range -- only the final output is
+    filtered back down to start_date. Leave start_date unset for a one-off full rebuild
+    (mirrors load_bronze_to_snowflake's backfill case), where the runway is moot since the
+    whole history is read anyway.
     """
     hook = SnowflakeHook(snowflake_conn_id="snowflake_default")
     conn = hook.get_conn()
     cur = conn.cursor()
 
-    where_clause = "WHERE DATE_HEURE >= %(start_date)s" if start_date else ""
+    window_read_clause = "WHERE DATE_HEURE >= DATEADD('day', -7, %(start_date)s)" if start_date else ""
+    output_filter_clause = "WHERE w.DATE_HEURE >= %(start_date)s" if start_date else ""
     try:
         cur.execute(f"""
             MERGE INTO GOLD.FACT_CONSOMMATION_HORAIRE AS tgt
             USING (
+                WITH windowed AS (
+                    SELECT
+                        DATE(DATE_HEURE) AS DATE_KEY,
+                        DATE_HEURE,
+                        REGION_CODE,
+                        CONSOMMATION,
+                        TEMPERATURE_2M,
+                        PRECIPITATION,
+                        IS_HOLIDAY,
+                        YEAR,
+                        AVG(CONSOMMATION) OVER (
+                            PARTITION BY REGION_CODE
+                            ORDER BY DATE_HEURE
+                            RANGE BETWEEN INTERVAL '7 days' PRECEDING AND CURRENT ROW
+                        ) AS CONSO_MOYENNE_MOBILE_7J
+                    FROM SILVER.CONSO_METEO_HORAIRE
+                    {window_read_clause}
+                )
                 SELECT
-                    DATE(DATE_HEURE) AS DATE_KEY,
-                    DATE_HEURE,
-                    REGION_CODE,
-                    CONSOMMATION,
-                    TEMPERATURE_2M,
-                    PRECIPITATION,
-                    IS_HOLIDAY,
-                    YEAR
-                FROM SILVER.CONSO_METEO_HORAIRE
-                {where_clause}
+                    w.DATE_KEY,
+                    w.DATE_HEURE,
+                    w.REGION_CODE,
+                    w.CONSOMMATION,
+                    w.TEMPERATURE_2M,
+                    w.PRECIPITATION,
+                    w.IS_HOLIDAY,
+                    w.YEAR,
+                    w.CONSO_MOYENNE_MOBILE_7J,
+                    lag7.CONSOMMATION AS CONSO_J_MOINS_7
+                FROM windowed w
+                LEFT JOIN SILVER.CONSO_METEO_HORAIRE lag7
+                    ON lag7.REGION_CODE = w.REGION_CODE
+                    AND lag7.DATE_HEURE = DATEADD('day', -7, w.DATE_HEURE)
+                {output_filter_clause}
             ) AS src
             ON tgt.DATE_HEURE = src.DATE_HEURE AND tgt.REGION_CODE = src.REGION_CODE
             WHEN MATCHED THEN UPDATE SET
                 tgt.CONSOMMATION = src.CONSOMMATION,
                 tgt.TEMPERATURE_2M = src.TEMPERATURE_2M,
                 tgt.PRECIPITATION = src.PRECIPITATION,
-                tgt.IS_HOLIDAY = src.IS_HOLIDAY
-            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, YEAR)
-            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.YEAR)
+                tgt.IS_HOLIDAY = src.IS_HOLIDAY,
+                tgt.CONSO_MOYENNE_MOBILE_7J = src.CONSO_MOYENNE_MOBILE_7J,
+                tgt.CONSO_J_MOINS_7 = src.CONSO_J_MOINS_7
+            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, YEAR, CONSO_MOYENNE_MOBILE_7J, CONSO_J_MOINS_7)
+            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.YEAR, src.CONSO_MOYENNE_MOBILE_7J, src.CONSO_J_MOINS_7)
         """, {"start_date": start_date} if start_date else None)
     finally:
         cur.close()

@@ -33,6 +33,14 @@ def main() -> None:
         df.write.partitionBy(
             "region_code", "year", "month", "day"
         ).parquet(args.output_dir, mode="overwrite")
+
+        if args.staging_dir:
+            # Same data, flattened (no partitionBy) and coalesced into few, larger files,
+            # used only for the Snowflake PUT/COPY. The Hive-partitioned output_dir stays
+            # the source of truth for get_latest_date and downstream Spark reads.
+            df.coalesce(8).write.parquet(
+                args.staging_dir, mode="overwrite"
+            )
     finally:
         spark.stop()
 

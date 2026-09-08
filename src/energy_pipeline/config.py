@@ -18,6 +18,9 @@ HOLIDAY_PATH = f"{BRONZE_DIR}/public_holidays.parquet"
 
 ECO2MIX_NAME = "eco2mix-regional-cons-def"
 ECO2MIX_DATA_PATH = f"{BRONZE_DIR}/{ECO2MIX_NAME}"
+# Flat, coalesced copy of ECO2MIX_DATA_PATH used only as the Snowflake load source for
+# the backfill (fewer, larger files than the Hive-partitioned tree) -- see backfill_eco2mix.
+ECO2MIX_STAGING_PATH = f"{BRONZE_DIR}/_staging/{ECO2MIX_NAME}"
 ECO2MIX_SELECT_COLUMNS = "date_heure, date, code_insee_region, libelle_region, nature, consommation"
 
 WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -26,6 +29,9 @@ WEATHER_HOURLY = ["temperature_2m", "precipitation"]
 
 WEATHER_NAME = "openmeteo"
 WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
+# Flat, coalesced copy of WEATHER_DATA_PATH used only as the Snowflake load source for
+# the backfill (fewer, larger files than the Hive-partitioned tree) -- see backfill_weather.
+WEATHER_STAGING_PATH = f"{BRONZE_DIR}/_staging/{WEATHER_NAME}"
 
 DAILY_MARKER = "daily"
 

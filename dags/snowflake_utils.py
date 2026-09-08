@@ -15,12 +15,6 @@ def load_bronze_to_snowflake(local_paths: list[str] | str | XComArg, stage_folde
     duplicate rows for any day/year that gets reprocessed. The one exception is a one-off
     backfill/full rebuild, where loading the whole tree once is fine since it isn't
     routinely re-run.
-
-    Typed to accept XComArg too: at DAG-authoring time (e.g. load_bronze_to_snowflake(
-    touched_partitions, ...) where touched_partitions is another task's call result),
-    what's actually passed is an XComArg proxy, not yet the real list[str] — Airflow
-    resolves it to the real value before the function body runs, so the isinstance/list
-    handling below only ever sees the resolved list[str] | str at runtime.
     """
     if isinstance(local_paths, str):
         local_paths = [local_paths]

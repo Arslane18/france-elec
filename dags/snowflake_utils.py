@@ -45,3 +45,54 @@ def load_bronze_to_snowflake(local_paths: list[str] | str | XComArg, stage_folde
     finally:
         cur.close()
         conn.close()
+
+
+@task
+def merge_silver_to_snowflake(local_path: str) -> None:
+    """PUT the flat, coalesced CONSO_METEO_HORAIRE parquet file(s) to BRONZE.LANDING_STAGE/silver/,
+    then MERGE them into SILVER.CONSO_METEO_HORAIRE.
+
+    A MERGE (upsert on DATE_HEURE, REGION_CODE), not a COPY INTO, because
+    daily_data_transformation reprocesses a rolling 7-day window on every run -- a plain
+    append would duplicate rows for any day inside that overlap. Hardcoded to this one
+    table/schema rather than made generic like load_bronze_to_snowflake: there's only one
+    silver table today, and unlike COPY INTO's MATCH_BY_COLUMN_NAME, a MERGE's column
+    list and join keys can't be inferred generically.
+    """
+    root = Path(local_path)
+    files = [root] if root.is_file() else sorted(root.rglob("*.parquet"))
+    if not files:
+        return
+
+    hook = SnowflakeHook(snowflake_conn_id="snowflake_default")
+    conn = hook.get_conn()
+    cur = conn.cursor()
+    try:
+        for f in files:
+            cur.execute(
+                f"PUT file://{f} @BRONZE.LANDING_STAGE/silver/ AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
+            )
+        cur.execute("""
+            MERGE INTO SILVER.CONSO_METEO_HORAIRE AS tgt
+            USING (
+                SELECT $1:date_heure::TIMESTAMP_NTZ AS DATE_HEURE,
+                       $1:region_code::NUMBER        AS REGION_CODE,
+                       $1:consommation::FLOAT        AS CONSOMMATION,
+                       $1:temperature_2m::FLOAT      AS TEMPERATURE_2M,
+                       $1:precipitation::FLOAT       AS PRECIPITATION,
+                       $1:is_holiday::INT            AS IS_HOLIDAY,
+                       $1:year::INT                  AS YEAR
+                FROM @BRONZE.LANDING_STAGE/silver/
+            ) AS src
+            ON tgt.DATE_HEURE = src.DATE_HEURE AND tgt.REGION_CODE = src.REGION_CODE
+            WHEN MATCHED THEN UPDATE SET
+                tgt.CONSOMMATION = src.CONSOMMATION,
+                tgt.TEMPERATURE_2M = src.TEMPERATURE_2M,
+                tgt.PRECIPITATION = src.PRECIPITATION,
+                tgt.IS_HOLIDAY = src.IS_HOLIDAY
+            WHEN NOT MATCHED THEN INSERT (DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, YEAR)
+            VALUES (src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.YEAR)
+        """)
+    finally:
+        cur.close()
+        conn.close()

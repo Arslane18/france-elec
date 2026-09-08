@@ -9,6 +9,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--start-date", required=False)
     parser.add_argument("--holiday-path", required=False)
+    parser.add_argument("--staging-dir", required=False, help="Flat, non-partitioned copy for the Snowflake MERGE, coalesced into fewer files")
     return parser.parse_args()
 
 def clean_eco2mix(df):

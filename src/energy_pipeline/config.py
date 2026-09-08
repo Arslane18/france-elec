@@ -18,8 +18,6 @@ HOLIDAY_PATH = f"{BRONZE_DIR}/public_holidays.parquet"
 
 ECO2MIX_NAME = "eco2mix-regional-cons-def"
 ECO2MIX_DATA_PATH = f"{BRONZE_DIR}/{ECO2MIX_NAME}"
-# Flat, coalesced copy of ECO2MIX_DATA_PATH used only as the Snowflake load source for
-# the backfill (fewer, larger files than the Hive-partitioned tree) -- see backfill_eco2mix.
 ECO2MIX_STAGING_PATH = f"{BRONZE_DIR}/_staging/{ECO2MIX_NAME}"
 ECO2MIX_SELECT_COLUMNS = "date_heure, date, code_insee_region, libelle_region, nature, consommation"
 
@@ -29,8 +27,6 @@ WEATHER_HOURLY = ["temperature_2m", "precipitation"]
 
 WEATHER_NAME = "openmeteo"
 WEATHER_DATA_PATH = f"{BRONZE_DIR}/{WEATHER_NAME}"
-# Flat, coalesced copy of WEATHER_DATA_PATH used only as the Snowflake load source for
-# the backfill (fewer, larger files than the Hive-partitioned tree) -- see backfill_weather.
 WEATHER_STAGING_PATH = f"{BRONZE_DIR}/_staging/{WEATHER_NAME}"
 
 DAILY_MARKER = "daily"
@@ -38,8 +34,9 @@ DAILY_MARKER = "daily"
 # The joined eco2mix + weather (+ later, calendar) table — one dataset, not one
 # per source like bronze, since the sources are already merged by this point.
 ECO2MIX_WEATHER_DATA_PATH = f"{SILVER_DIR}/eco2mix_weather"
+ECO2MIX_WEATHER_STAGING_PATH = f"{SILVER_DIR}/_staging/eco2mix_weather"
 
-#We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
+# We need this because Historical Weather API only accepts geographical points and not names of city/regions. Sorted regions in alphabetical order bc im a psycho.
 REGION_COORDS = {
     11 : (48.8566, 2.3522),         # Paris
     24 : (47.3941, 0.6848),         # Tours

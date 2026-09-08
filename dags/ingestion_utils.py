@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from airflow.sdk import task
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from airflow.sdk.exceptions import AirflowFailException
 
 from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME, DAILY_MARKER
 
@@ -108,15 +109,20 @@ def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: st
         for row in touched.iter_rows()
     ]
 
-def resolve_latest_partition_date(path):
-    '''
-    Retrieve the latest date from a local file structure organized as
-    year=YYYY/month=MM/day=DD. 
-    '''
+def _latest_partition_value(directory: Path, prefix: str) -> int:
+    values = [int(p.name.split("=")[1]) for p in directory.glob(f"{prefix}=*")]
+    if not values:
+        raise AirflowFailException(
+            f"No partitions '{prefix}=*' under {directory} — "
+            "try to launch backfill DAG for this dataset before this daily dag."
+        )
+    return max(values)
+
+def resolve_latest_date(path: str) -> str:
     base = Path(path)
-    last_year = max(int(p.name.split("=")[1]) for p in base.glob("year=*"))
-    last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
-    last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
+    last_year = _latest_partition_value(base, "year")
+    last_month = _latest_partition_value(base / f"year={last_year}", "month")
+    last_day = _latest_partition_value(base / f"year={last_year}/month={last_month}", "day")
     return f"{last_year}-{last_month:02d}-{last_day:02d}"
 
 @task

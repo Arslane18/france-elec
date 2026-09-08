@@ -118,7 +118,7 @@ def _latest_partition_value(directory: Path, prefix: str) -> int:
         )
     return max(values)
 
-def resolve_latest_date(path: str) -> str:
+def resolve_latest_partition_date(path: str) -> str:
     base = Path(path)
     last_year = _latest_partition_value(base, "year")
     last_month = _latest_partition_value(base / f"year={last_year}", "month")

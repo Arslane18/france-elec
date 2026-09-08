@@ -18,6 +18,7 @@ from energy_pipeline.config import (
     WEATHER_STAGING_PATH,
     RAW_DIR,
     SPARK_JOBS_DIR,
+    SPARK_CONFIG,
 )
 
 
@@ -53,12 +54,7 @@ def backfill_weather():
         executor_cores=1,
         executor_memory="512m",
         driver_memory="512m",
-        conf={
-            "spark.sql.shuffle.partitions": "4",
-            "spark.pyspark.python": "python3.13",
-            "spark.pyspark.driver.python": "python3.13",
-            "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
-        },
+        conf=SPARK_CONFIG,
         pool="spark_pool",
     )
 

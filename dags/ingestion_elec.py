@@ -9,7 +9,14 @@ from ingestion_utils import (
     raw_eco2mix_glob
 )
 from snowflake_utils import load_bronze_to_snowflake
-from energy_pipeline.config import BASE_URL, ECO2MIX_DATA_PATH, ECO2MIX_STAGING_PATH, ECO2MIX_SELECT_COLUMNS, SPARK_JOBS_DIR
+from energy_pipeline.config import (
+    BASE_URL, 
+    ECO2MIX_DATA_PATH, 
+    ECO2MIX_STAGING_PATH, 
+    ECO2MIX_SELECT_COLUMNS, 
+    SPARK_JOBS_DIR, 
+    SPARK_CONFIG,
+)
 
 
 
@@ -36,12 +43,7 @@ def backfill_eco2mix():
         executor_cores=1,
         executor_memory="512m",
         driver_memory="512m",
-        conf={
-            "spark.sql.shuffle.partitions": "4",
-            "spark.pyspark.python": "python3.13",
-            "spark.pyspark.driver.python": "python3.13",
-            "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
-        },
+        conf=SPARK_CONFIG,
         pool="spark_pool",
     )
 

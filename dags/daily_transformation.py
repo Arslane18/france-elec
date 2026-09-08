@@ -6,10 +6,11 @@ from snowflake_utils import merge_silver_to_snowflake, construct_gold_layer
 from energy_pipeline.config import (
     ECO2MIX_DATA_PATH,
     WEATHER_DATA_PATH,
-    HOLIDAY_PATH,
-    SPARK_JOBS_DIR,
     ECO2MIX_WEATHER_DATA_PATH,
     ECO2MIX_WEATHER_STAGING_PATH,
+    HOLIDAY_PATH,
+    SPARK_JOBS_DIR,
+    SPARK_CONFIG,
 )
 
 
@@ -39,12 +40,7 @@ def daily_data_transformation():
         executor_cores=1,
         executor_memory="1024m",
         driver_memory="1024m",
-        conf={
-            "spark.sql.shuffle.partitions": "4",
-            "spark.pyspark.python": "python3.13",
-            "spark.pyspark.driver.python": "python3.13",
-            "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
-        },
+        conf=SPARK_CONFIG,
         pool="spark_pool",
     )
     

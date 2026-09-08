@@ -66,3 +66,10 @@ REGION_NAMES = {
     93 : "Provence-Alpes-Côte d'Azur", 
     11 : "Île-de-France",
 }
+
+SPARK_CONFIG = {
+            "spark.sql.shuffle.partitions": "4",
+            "spark.pyspark.python": "python3.13",
+            "spark.pyspark.driver.python": "python3.13",
+            "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
+        }

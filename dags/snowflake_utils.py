@@ -145,7 +145,6 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
                         TEMPERATURE_2M,
                         PRECIPITATION,
                         IS_HOLIDAY,
-                        YEAR,
                         AVG(CONSOMMATION) OVER (
                             PARTITION BY REGION_CODE
                             ORDER BY DATE_HEURE
@@ -162,7 +161,6 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
                     w.TEMPERATURE_2M,
                     w.PRECIPITATION,
                     w.IS_HOLIDAY,
-                    w.YEAR,
                     w.CONSO_MOYENNE_MOBILE_7J,
                     lag7.CONSOMMATION AS CONSO_J_MOINS_7
                 FROM windowed w
@@ -179,8 +177,8 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
                 tgt.IS_HOLIDAY = src.IS_HOLIDAY,
                 tgt.CONSO_MOYENNE_MOBILE_7J = src.CONSO_MOYENNE_MOBILE_7J,
                 tgt.CONSO_J_MOINS_7 = src.CONSO_J_MOINS_7
-            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, YEAR, CONSO_MOYENNE_MOBILE_7J, CONSO_J_MOINS_7)
-            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.YEAR, src.CONSO_MOYENNE_MOBILE_7J, src.CONSO_J_MOINS_7)
+            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, CONSO_MOYENNE_MOBILE_7J, CONSO_J_MOINS_7)
+            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.CONSO_MOYENNE_MOBILE_7J, src.CONSO_J_MOINS_7)
         """, {"start_date": start_date} if start_date else None)
     finally:
         cur.close()

@@ -42,14 +42,6 @@ def main() -> None:
             ).parquet(args.output_dir, mode="overwrite")
 
     if args.staging_dir:
-        # Same rows, flattened (no partitionBy) and coalesced into few, larger files, used
-        # only for the Snowflake MERGE. Hive partition columns (region_code/year) are
-        # stripped from the actual parquet file content by the partitioned writer, and PUT
-        # flattens the stage folder away, so loading straight from output_dir would drop
-        # REGION_CODE (NOT NULL, part of the merge key) -- same issue as bronze/openmeteo.
-        # result_df is already scoped to just what this run processed (the full history for
-        # a backfill, a rolling window for daily_data_transformation), so no extra pruning
-        # is needed here.
         result_df.coalesce(8).write.parquet(args.staging_dir, mode="overwrite")
 
 if __name__ == "__main__":

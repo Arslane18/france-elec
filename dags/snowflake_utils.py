@@ -9,8 +9,9 @@ def load_bronze_to_snowflake(local_paths: list[str] | str | XComArg, stage_folde
     """PUT every parquet file under local_paths to BRONZE.LANDING_STAGE/<stage_folder>/,
     then COPY INTO the target bronze table.
 
-    local_paths should be scoped to just the partition(s) a run actually touched (what
-    write_bronze_partitioned returns), not the whole bronze tree: Spark/Polars give every
+    local_paths should be scoped to just the partition(s)/file(s) a run actually touched
+    (what write_bronze_partitioned or write_flat_staging_copy returns), not the whole
+    bronze tree: Spark/Polars give every
     partition rewrite a new random filename, so rescanning everything would reload and
     duplicate rows for any day/year that gets reprocessed. The one exception is a one-off
     backfill/full rebuild, where loading the whole tree once is fine since it isn't

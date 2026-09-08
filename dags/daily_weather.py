@@ -13,6 +13,7 @@ from ingestion_utils import (
     raw_weather_daily_path,
     raw_weather_daily_glob_pattern,
     write_bronze_partitioned,
+    write_flat_staging_copy,
 )
 from snowflake_utils import load_bronze_to_snowflake
 from energy_pipeline.config import (
@@ -52,7 +53,10 @@ def daily_weather():
 
     @task
     def write_weather_bronze(_fetched_paths) -> list[str]:
-        """Combine all raw daily weather JSON files into the openmeteo bronze table, partitioned by region/year/month/day."""
+        """Combine all raw daily weather JSON files into the openmeteo bronze table,
+        partitioned by region/year/month/day, and return a flat staging copy for the
+        Snowflake load.
+        """
         # _fetched_paths is unused: it only forces this task to depend on every fetch_weather_updates instance.
         rows = []
         for path in sorted(Path(RAW_DIR).glob(pattern=raw_weather_daily_glob_pattern())):
@@ -69,16 +73,16 @@ def daily_weather():
 
         df = pl.from_dicts(rows)
         df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"))
-        return write_bronze_partitioned(
+        write_bronze_partitioned(
             df,
-            partition_date=pl.col("time"),
+            partition_date_expr=pl.col("time"),
             path=WEATHER_DATA_PATH,
             region_partitioned=True,
-            staging_path=WEATHER_STAGING_PATH,
         )
+        return [write_flat_staging_copy(df, staging_path=WEATHER_STAGING_PATH, filename="daily.parquet")]
 
     fetched_paths = fetch_weather_updates.expand(region=list(REGION_COORDS.items()))
-    touched_partitions = write_weather_bronze(fetched_paths)
-    load_bronze_to_snowflake(touched_partitions, "openmeteo", "OPENMETEO")
+    staged_path = write_weather_bronze(fetched_paths)
+    load_bronze_to_snowflake(staged_path, "openmeteo", "OPENMETEO")
 
 daily_weather()

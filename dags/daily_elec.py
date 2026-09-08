@@ -36,14 +36,12 @@ def daily_eco2mix():
         """Append the freshly fetched raw parquet to the eco2mix bronze table, partitioned by year/month/day."""
         df = pl.read_parquet(path)
         # Used to have problems between dailys and backfills runs, this resolve the problem by standardizing schema.
-        # Microseconds (not nanoseconds): Spark's TimestampType is microsecond precision and can't read
-        # Parquet TIMESTAMP(NANOS) columns, which is what a "ns" cast here produces.
         df = df.with_columns(
             date_heure=pl.col('date_heure').dt.replace_time_zone(None).dt.cast_time_unit("us"),
         )
         return write_bronze_partitioned(
             df,
-            partition_date=pl.col('date').str.to_datetime("%Y-%m-%d"),
+            partition_date_expr=pl.col('date').str.to_datetime("%Y-%m-%d"),
             path=ECO2MIX_DATA_PATH,
         )
 

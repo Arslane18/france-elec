@@ -108,16 +108,26 @@ def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: st
         for row in touched.iter_rows()
     ]
 
-def get_latest_date(path):
+def resolve_latest_partition_date(path):
+        '''
+        Retrieve the latest date from a local file structure organized as
+        year=YYYY/month=MM/day=DD. 
+        '''
         base = Path(path)
         last_year = max(int(p.name.split("=")[1]) for p in base.glob("year=*"))
         last_month = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}").glob("month=*"))
         last_day = max(int(p.name.split("=")[1]) for p in (base / f"year={last_year}" / f"month={last_month}").glob("day=*"))
         return f"{last_year}-{last_month:02d}-{last_day:02d}"
 
-
 @task
-def resolve_target_date( delta_day: int, **context) -> str:
+def resolve_target_date(delta_day: int, **context) -> str:
+    '''
+    Resolve the target date to process.
+
+    If a "target_date" parameter is explicitly provided in the DAG run
+    context, it is used as-is. Otherwise, the target date is computed
+    by subtracting `delta_day` days from the DAG's logical date.
+    '''
     target = context["params"].get("target_date")
     if target:
         return target

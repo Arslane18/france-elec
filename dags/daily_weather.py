@@ -9,7 +9,7 @@ from energy_pipeline.global_utils import region_code_from_filename
 
 from ingestion_utils import (
     fetch_and_store,
-    get_latest_date,
+    resolve_latest_partition_date,
     raw_weather_daily_path,
     raw_weather_daily_glob_pattern,
     write_bronze_partitioned,
@@ -39,7 +39,7 @@ def daily_weather():
     def fetch_weather_updates(region):
         """Fetch hourly weather data for one region from the last ingested date up to today, and write it as raw JSON."""
         region_code, (latitude, longitude) = region
-        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region_code={region_code}")
+        start_date = resolve_latest_partition_date(path=f"{WEATHER_DATA_PATH}/region_code={region_code}")
         end_date = date.today().isoformat()
         params = {
             "latitude": latitude,

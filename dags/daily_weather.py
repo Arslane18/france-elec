@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import timedelta, date
 from airflow.sdk import dag, task
 
-from energy_pipeline.global_utils import region_name_from_filename
+from energy_pipeline.global_utils import region_code_from_filename
 
 from ingestion_utils import (
     fetch_and_store,
@@ -56,7 +56,7 @@ def daily_weather():
         # _fetched_paths is unused: it only forces this task to depend on every fetch_weather_updates instance.
         rows = []
         for path in sorted(Path(RAW_DIR).glob(pattern=raw_weather_daily_glob_pattern())):
-            region_code = region_name_from_filename(path)
+            region_code = region_code_from_filename(path)
             with open(path, "r") as file:
                 hourly = json.load(file)["hourly"]
             for values in zip(*hourly.values()):

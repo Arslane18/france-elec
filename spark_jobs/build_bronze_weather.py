@@ -3,19 +3,19 @@ import json
 from pathlib import Path
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from energy_pipeline.global_utils import parse_args, region_name_from_filename
+from energy_pipeline.global_utils import parse_bronze_args, region_code_from_filename
 
 
 
 def main() -> None:
-    args = parse_args()
+    args = parse_bronze_args()
     raw_dir = Path(args.raw_dir)
 
     spark = SparkSession.builder.appName("openmeteo-bronze").getOrCreate()
     try:
         rows = []
         for path in sorted(raw_dir.glob("openmeteo-*.json")):
-            region_code = region_name_from_filename(path)
+            region_code = region_code_from_filename(path)
             with open(path, "r") as file:
                 hourly = json.load(file)["hourly"]
             for values in zip(*hourly.values()):

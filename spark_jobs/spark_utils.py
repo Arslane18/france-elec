@@ -2,7 +2,7 @@ import argparse
 from pyspark.sql import functions as F
 
 
-def parse_args() -> argparse.Namespace:
+def parse_silver_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--eco2mix-path", required=True)
     parser.add_argument("--openmeteo-path", required=True)

@@ -1,10 +1,10 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
-from spark_utils import parse_args, clean_meteo, clean_eco2mix, clean_holiday
+from spark_utils import parse_silver_args, clean_meteo, clean_eco2mix, clean_holiday
 
 def main() -> None:
-    args = parse_args()
+    args = parse_silver_args()
     spark = SparkSession.builder.appName("silver_layer").config("spark.sql.sources.partitionOverwriteMode", "dynamic").getOrCreate()
 
 

@@ -16,7 +16,7 @@ retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 5
 session.mount("https://", HTTPAdapter(max_retries=retry))
 
 def fetch_data_from_api(url: str, params: Dict[str,Any]):
-    '''Simply fetch data from an given url'''
+    '''Simply fetch data from a given url'''
     resp = requests.get(url, params=params, timeout=30)
     resp.raise_for_status()
     return resp
@@ -45,7 +45,7 @@ def raw_weather_path(region_code: int, year: int | str) -> str:
     return f"{RAW_DIR}/{WEATHER_NAME}-{region_code}-{year}.json"
 
 def raw_eco2mix_path(year: int) -> str:
-    return f"{RAW_DIR}/{ECO2MIX_NAME}{year}.parquet"
+    return f"{RAW_DIR}/{ECO2MIX_NAME}-{year}.parquet"
 
 def raw_eco2mix_glob() -> str:
     return f"{RAW_DIR}/{ECO2MIX_NAME}*.parquet"

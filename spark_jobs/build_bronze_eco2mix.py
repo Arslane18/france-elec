@@ -1,9 +1,9 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from energy_pipeline.global_utils import parse_args
+from energy_pipeline.global_utils import parse_bronze_args
 
 def main() -> None:
-    args = parse_args()
+    args = parse_bronze_args()
 
     # Pinned to UTC: so date based column all have the same schema
     spark = (

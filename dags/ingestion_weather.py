@@ -62,11 +62,6 @@ def backfill_weather():
         pool="spark_pool",
     )
 
-    # Full-tree load, not scoped to touched partitions: fine here since a backfill is a
-    # one-off rebuild, not something routinely re-run (unlike the daily DAG, where
-    # rescanning everything would duplicate rows for any reprocessed day). Loads from
-    # WEATHER_STAGING_PATH (flat, coalesced) rather than WEATHER_DATA_PATH (Hive-partitioned,
-    # ~60k tiny files) to keep the PUT/COPY step fast.
     load_snowflake = load_bronze_to_snowflake(WEATHER_STAGING_PATH, "openmeteo", "OPENMETEO")
 
     years = compute_years()

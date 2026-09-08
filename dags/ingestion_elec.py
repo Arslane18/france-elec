@@ -45,11 +45,6 @@ def backfill_eco2mix():
         pool="spark_pool",
     )
 
-    # Full-tree load, not scoped to touched partitions: fine here since a backfill is a
-    # one-off rebuild, not something routinely re-run (unlike the daily DAG, where
-    # rescanning everything would duplicate rows for any reprocessed day). Loads from
-    # ECO2MIX_STAGING_PATH (flat, coalesced) rather than ECO2MIX_DATA_PATH (Hive-partitioned,
-    # ~5.5k small files) to keep the PUT/COPY step fast.
     load_snowflake = load_bronze_to_snowflake(ECO2MIX_STAGING_PATH, "eco2mix", "ECO2MIX_REGIONAL")
 
     years = compute_years()

@@ -96,3 +96,50 @@ def merge_silver_to_snowflake(local_path: str) -> None:
     finally:
         cur.close()
         conn.close()
+
+
+
+@task
+def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
+    """MERGE SILVER.CONSO_METEO_HORAIRE into GOLD.FACT_CONSOMMATION_HORAIRE.
+
+    Snowflake-to-Snowflake, no PUT/staging needed since both tables already live in the
+    warehouse. If start_date is given, scopes the source read to DATE_HEURE >= start_date
+    (e.g. daily_data_transformation's own rolling window) instead of rescanning the whole
+    silver history -- and re-comparing it row by row against the fact table -- on every run.
+    Leave it unset for a one-off full rebuild (mirrors load_bronze_to_snowflake's backfill case).
+    """
+    hook = SnowflakeHook(snowflake_conn_id="snowflake_default")
+    conn = hook.get_conn()
+    cur = conn.cursor()
+
+    where_clause = "WHERE DATE_HEURE >= %(start_date)s" if start_date else ""
+    try:
+        cur.execute(f"""
+            MERGE INTO GOLD.FACT_CONSOMMATION_HORAIRE AS tgt
+            USING (
+                SELECT
+                    DATE(DATE_HEURE) AS DATE_KEY,
+                    DATE_HEURE,
+                    REGION_CODE,
+                    CONSOMMATION,
+                    TEMPERATURE_2M,
+                    PRECIPITATION,
+                    IS_HOLIDAY,
+                    YEAR
+                FROM SILVER.CONSO_METEO_HORAIRE
+                {where_clause}
+            ) AS src
+            ON tgt.DATE_HEURE = src.DATE_HEURE AND tgt.REGION_CODE = src.REGION_CODE
+            WHEN MATCHED THEN UPDATE SET
+                tgt.CONSOMMATION = src.CONSOMMATION,
+                tgt.TEMPERATURE_2M = src.TEMPERATURE_2M,
+                tgt.PRECIPITATION = src.PRECIPITATION,
+                tgt.IS_HOLIDAY = src.IS_HOLIDAY
+            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, YEAR)
+            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.YEAR)
+        """, {"start_date": start_date} if start_date else None)
+    finally:
+        cur.close()
+        conn.close()
+

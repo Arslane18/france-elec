@@ -1,7 +1,7 @@
 from airflow.sdk import dag
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
-from snowflake_utils import merge_silver_to_snowflake
+from snowflake_utils import merge_silver_to_snowflake, construct_gold_layer
 from energy_pipeline.config import (
     ECO2MIX_DATA_PATH,
     WEATHER_DATA_PATH,
@@ -40,7 +40,7 @@ def data_transformation():
     
     load_snowflake = merge_silver_to_snowflake(ECO2MIX_WEATHER_STAGING_PATH)
 
-    build_silver >> load_snowflake
+    build_silver >> load_snowflake >> construct_gold_layer()
 
 
 data_transformation()

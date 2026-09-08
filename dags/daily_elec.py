@@ -8,6 +8,7 @@ from ingestion_utils import (
     raw_eco2mix_daily_path,
     write_bronze_partitioned,
 )
+from snowflake_utils import load_bronze_to_snowflake
 from energy_pipeline.config import ECO2MIX_DATA_PATH, ECO2MIX_SELECT_COLUMNS, RTE_URL
 
 
@@ -30,7 +31,7 @@ def daily_eco2mix():
         return path
 
     @task
-    def write_eco2mix_bronze(path):
+    def write_eco2mix_bronze(path) -> list[str]:
         """Append the freshly fetched raw parquet to the eco2mix bronze table, partitioned by year/month/day."""
         df = pl.read_parquet(path)
         # Used to have problems between dailys and backfills runs, this resolve the problem by standardizing schema.
@@ -39,14 +40,15 @@ def daily_eco2mix():
         df = df.with_columns(
             date_heure=pl.col('date_heure').dt.replace_time_zone(None).dt.cast_time_unit("us"),
         )
-        write_bronze_partitioned(
+        return write_bronze_partitioned(
             df,
             partition_date=pl.col('date').str.to_datetime("%Y-%m-%d"),
             path=ECO2MIX_DATA_PATH,
         )
-    
+
     target_date = get_latest_date(path=ECO2MIX_DATA_PATH)
     path = fetch_eco2mix_updates(target_date)
-    write_eco2mix_bronze(path)
+    touched_partitions = write_eco2mix_bronze(path)
+    load_bronze_to_snowflake(touched_partitions, "eco2mix", "ECO2MIX_REGIONAL")
 
 daily_eco2mix()

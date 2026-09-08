@@ -10,6 +10,7 @@ requires-python = ">=3.13.15,<3.14"
 dependencies = [
     "apache-airflow>=3.3.1",
     "apache-airflow-providers-apache-spark>=6.3.2",
+    "apache-airflow-providers-snowflake>=6.5.1",
     "fastapi>=0.129.0,<0.137.0",
     "graphviz>=0.21",
     "jours-feries-france>=0.7.0",
@@ -19,6 +20,7 @@ dependencies = [
     "pyspark>=4.2.0",
     "python-dotenv>=1.2.3",
     "requests>=2.34.2",
+    "snowflake-connector-python[secure-local-storage]>=4.7.3",
 ]
 
 [project.scripts]

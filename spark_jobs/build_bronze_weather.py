@@ -33,6 +33,11 @@ def main() -> None:
         df.write.partitionBy(
             "region_code", "year", "month", "day"
         ).parquet(args.output_dir, mode="overwrite")
+
+        if args.staging_dir:
+            df.coalesce(8).write.parquet(
+                args.staging_dir, mode="overwrite"
+            )
     finally:
         spark.stop()
 

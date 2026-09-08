@@ -67,24 +67,46 @@ def year_date_range(year: int) -> tuple[str, str]:
         end_date = datetime.today().strftime("%Y-%m-%d")
     return start_date, end_date
 
-def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: str, region_partitioned: bool = False) -> None:
+def write_bronze_partitioned(df: pl.DataFrame, partition_date: pl.Expr, path: str, region_partitioned: bool = False, staging_path: str | None = None) -> list[str]:
     '''Derive year/month/day hive partitions from partition_date and write, replacing any existing data in the touched partitions.
 
-    partition_date is an expression, not a column name, so callers can derive the
-    partition value (e.g. by parsing a string column) without overwriting a source
-    column that should stay in its original raw form in bronze.
+    If staging_path is given, also writes a flat (non-Hive) copy of the same rows there
+    and returns that file's path instead of the touched partition directories. Hive
+    partition columns (region_code/year/month/day) are stripped from the actual parquet
+    file content by pyarrow's partitioned writer -- they only live in the directory
+    names -- and PUT to a Snowflake stage flattens that directory structure away, so
+    loading straight from the touched partition dirs silently drops those columns. The
+    flat staging copy keeps them as real columns so the Snowflake load doesn't lose them.
+
+    Otherwise, returns the touched partition directory paths (e.g.
+    ".../year=2026/month=9/day=7"), scoped to just what this call wrote. Spark/pyarrow
+    give every partition rewrite a new random filename, so a downstream Snowflake load
+    must PUT exactly these directories rather than rescan the whole bronze tree, or a
+    reprocessed day gets loaded twice.
     '''
     df = df.with_columns(
         year=partition_date.dt.year(),
         month=partition_date.dt.month(),
         day=partition_date.dt.day(),
     )
-    partition_cols = ["region", "year", "month", "day"] if region_partitioned else ["year", "month", "day"]
+    partition_cols = ["region_code", "year", "month", "day"] if region_partitioned else ["year", "month", "day"]
     df.write_parquet(
         path,
         pyarrow_options={"partition_cols": partition_cols, "existing_data_behavior": "delete_matching"},
         use_pyarrow=True,
     )
+
+    if staging_path:
+        Path(staging_path).mkdir(parents=True, exist_ok=True)
+        flat_path = f"{staging_path}/daily.parquet"
+        df.write_parquet(flat_path)
+        return [flat_path]
+
+    touched = df.select(partition_cols).unique()
+    return [
+        f"{path}/" + "/".join(f"{col}={row[i]}" for i, col in enumerate(partition_cols))
+        for row in touched.iter_rows()
+    ]
 
 def get_latest_date(path):
         base = Path(path)

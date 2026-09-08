@@ -7,6 +7,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--raw-dir", required=False, help="Directory with openmeteo-<region>-<year>.json files")
     parser.add_argument("--raw-glob", required=False, help="Glob pattern matching the raw eco2mix parquet files")
     parser.add_argument("--output-dir", required=True, help="Output directory for the partitioned parquet dataset")
+    parser.add_argument("--staging-dir", required=False, help="Flat, non-partitioned copy for the Snowflake load, coalesced into fewer files")
     return parser.parse_args()
 
 

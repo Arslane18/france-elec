@@ -18,12 +18,19 @@ def clean_eco2mix(df):
 
 def clean_meteo(df):
     df = df.withColumnRenamed("time", "date_heure")
-    return df
+    # Backup so duplicates rows are not carried further.
+    return (
+        df
+        .groupBy("region_code", "date_heure")
+        .agg(
+            F.avg("temperature_2m").alias("temperature_2m"),
+            F.avg("precipitation").alias("precipitation"),
+        )
+    )
 
 def clean_holiday(df):
     # Kept at day grain ("date", not renamed to "date_heure"): a holiday applies to every
-    # hour of that day, so the caller joins it against date_heure truncated to a date,
-    # not against the hourly timestamp directly.
+    # hour of that day, so the caller joins it against date_heure truncated to a date.
     return df.drop("jour_ferie")
 
 

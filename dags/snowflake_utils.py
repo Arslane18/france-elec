@@ -32,6 +32,9 @@ def load_bronze_to_snowflake(local_paths: list[str] | str | XComArg, stage_folde
     conn = hook.get_conn()
     cur = conn.cursor()
     try:
+        # Clear the stage first: Spark gives every run's staging files a new random
+        # name, so OVERWRITE=TRUE on PUT never replaces a prior run's files
+        cur.execute(f"REMOVE @BRONZE.LANDING_STAGE/{stage_folder}/")
         for f in files:
             cur.execute(
                 f"PUT file://{f} @BRONZE.LANDING_STAGE/{stage_folder}/ AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
@@ -69,6 +72,9 @@ def merge_silver_to_snowflake(local_path: str) -> None:
     conn = hook.get_conn()
     cur = conn.cursor()
     try:
+        # Clear the stage first: Spark gives every run's staging files a new random
+        # name, so OVERWRITE=TRUE on PUT never replaces a prior run's files
+        cur.execute("REMOVE @BRONZE.LANDING_STAGE/silver/")
         for f in files:
             cur.execute(
                 f"PUT file://{f} @BRONZE.LANDING_STAGE/silver/ AUTO_COMPRESS=FALSE OVERWRITE=TRUE"

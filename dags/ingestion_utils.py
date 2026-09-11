@@ -18,7 +18,7 @@ session.mount("https://", HTTPAdapter(max_retries=retry))
 
 def fetch_data_from_api(url: str, params: Dict[str,Any]):
     '''Simply fetch data from a given url'''
-    resp = requests.get(url, params=params, timeout=30)
+    resp = session.get(url, params=params, timeout=30)
     resp.raise_for_status()
     return resp
 

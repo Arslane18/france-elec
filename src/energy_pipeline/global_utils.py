@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 
-def parse_args() -> argparse.Namespace:
+def parse_bronze_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--raw-dir", required=False, help="Directory with openmeteo-<region>-<year>.json files")
     parser.add_argument("--raw-glob", required=False, help="Glob pattern matching the raw eco2mix parquet files")
@@ -11,8 +11,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def region_name_from_filename(path: Path) -> str:
-    # openmeteo-<region>-<year>.json ; region can itself contain - in its name, year is always 4 digits straight.
+def region_code_from_filename(path: Path) -> str:
+    '''
+    Retrieve region code from filename as it is like : openmeteo-<region_code>-<year>.json
+    '''
     stem = path.stem.removeprefix("openmeteo-")
-    region_name, _, _year = stem.rpartition("-")
-    return region_name
+    region_code, _, _year = stem.rpartition("-")
+    return region_code

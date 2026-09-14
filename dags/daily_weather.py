@@ -5,14 +5,15 @@ from pathlib import Path
 from datetime import timedelta, date
 from airflow.sdk import dag, task
 
-from energy_pipeline.global_utils import region_name_from_filename
+from energy_pipeline.global_utils import region_code_from_filename
 
 from ingestion_utils import (
     fetch_and_store,
-    get_latest_date,
+    resolve_latest_partition_date,
     raw_weather_daily_path,
     raw_weather_daily_glob_pattern,
     write_bronze_partitioned,
+    write_flat_staging_copy,
 )
 from snowflake_utils import load_bronze_to_snowflake
 from energy_pipeline.config import (
@@ -39,7 +40,7 @@ def daily_weather():
     def fetch_weather_updates(region):
         """Fetch hourly weather data for one region from the last ingested date up to today, and write it as raw JSON."""
         region_code, (latitude, longitude) = region
-        start_date = get_latest_date(path=f"{WEATHER_DATA_PATH}/region_code={region_code}")
+        start_date = resolve_latest_partition_date(path=f"{WEATHER_DATA_PATH}/region_code={region_code}")
         end_date = date.today().isoformat()
         params = {
             "latitude": latitude,
@@ -52,11 +53,14 @@ def daily_weather():
 
     @task
     def write_weather_bronze(_fetched_paths) -> list[str]:
-        """Combine all raw daily weather JSON files into the openmeteo bronze table, partitioned by region/year/month/day."""
+        """Combine all raw daily weather JSON files into the openmeteo bronze table,
+        partitioned by region/year/month/day, and return a flat staging copy for the
+        Snowflake load.
+        """
         # _fetched_paths is unused: it only forces this task to depend on every fetch_weather_updates instance.
         rows = []
         for path in sorted(Path(RAW_DIR).glob(pattern=raw_weather_daily_glob_pattern())):
-            region_code = region_name_from_filename(path)
+            region_code = region_code_from_filename(path)
             with open(path, "r") as file:
                 hourly = json.load(file)["hourly"]
             for values in zip(*hourly.values()):
@@ -69,16 +73,16 @@ def daily_weather():
 
         df = pl.from_dicts(rows)
         df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"))
-        return write_bronze_partitioned(
+        write_bronze_partitioned(
             df,
-            partition_date=pl.col("time"),
+            partition_date_expr=pl.col("time"),
             path=WEATHER_DATA_PATH,
             region_partitioned=True,
-            staging_path=WEATHER_STAGING_PATH,
         )
+        return [write_flat_staging_copy(df, staging_path=WEATHER_STAGING_PATH, filename="daily.parquet")]
 
     fetched_paths = fetch_weather_updates.expand(region=list(REGION_COORDS.items()))
-    touched_partitions = write_weather_bronze(fetched_paths)
-    load_bronze_to_snowflake(touched_partitions, "openmeteo", "OPENMETEO")
+    staged_path = write_weather_bronze(fetched_paths)
+    load_bronze_to_snowflake(staged_path, "openmeteo", "OPENMETEO")
 
 daily_weather()

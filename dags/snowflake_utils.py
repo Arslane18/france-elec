@@ -9,8 +9,9 @@ def load_bronze_to_snowflake(local_paths: list[str] | str | XComArg, stage_folde
     """PUT every parquet file under local_paths to BRONZE.LANDING_STAGE/<stage_folder>/,
     then COPY INTO the target bronze table.
 
-    local_paths should be scoped to just the partition(s) a run actually touched (what
-    write_bronze_partitioned returns), not the whole bronze tree: Spark/Polars give every
+    local_paths should be scoped to just the partition(s)/file(s) a run actually touched
+    (what write_bronze_partitioned or write_flat_staging_copy returns), not the whole
+    bronze tree: Spark/Polars give every
     partition rewrite a new random filename, so rescanning everything would reload and
     duplicate rows for any day/year that gets reprocessed. The one exception is a one-off
     backfill/full rebuild, where loading the whole tree once is fine since it isn't
@@ -31,6 +32,9 @@ def load_bronze_to_snowflake(local_paths: list[str] | str | XComArg, stage_folde
     conn = hook.get_conn()
     cur = conn.cursor()
     try:
+        # Clear the stage first: Spark gives every run's staging files a new random
+        # name, so OVERWRITE=TRUE on PUT never replaces a prior run's files
+        cur.execute(f"REMOVE @BRONZE.LANDING_STAGE/{stage_folder}/")
         for f in files:
             cur.execute(
                 f"PUT file://{f} @BRONZE.LANDING_STAGE/{stage_folder}/ AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
@@ -68,6 +72,9 @@ def merge_silver_to_snowflake(local_path: str) -> None:
     conn = hook.get_conn()
     cur = conn.cursor()
     try:
+        # Clear the stage first: Spark gives every run's staging files a new random
+        # name, so OVERWRITE=TRUE on PUT never replaces a prior run's files
+        cur.execute("REMOVE @BRONZE.LANDING_STAGE/silver/")
         for f in files:
             cur.execute(
                 f"PUT file://{f} @BRONZE.LANDING_STAGE/silver/ AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
@@ -114,7 +121,7 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
 
     RANGE BETWEEN INTERVAL '7 days' (time-based, not ROWS/168) and a self-join on
     DATE_HEURE - 7 days (not a positional LAG) because the hourly series can have gaps
-    (see 04_data_quality_checks.sql) -- a row-count-based offset would drift silently
+    (see 04_data_test.sql) -- a row-count-based offset would drift silently
     whenever an hour is missing.
 
     If start_date is given, the source is scoped to DATE_HEURE >= start_date (e.g.
@@ -145,7 +152,6 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
                         TEMPERATURE_2M,
                         PRECIPITATION,
                         IS_HOLIDAY,
-                        YEAR,
                         AVG(CONSOMMATION) OVER (
                             PARTITION BY REGION_CODE
                             ORDER BY DATE_HEURE
@@ -162,7 +168,6 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
                     w.TEMPERATURE_2M,
                     w.PRECIPITATION,
                     w.IS_HOLIDAY,
-                    w.YEAR,
                     w.CONSO_MOYENNE_MOBILE_7J,
                     lag7.CONSOMMATION AS CONSO_J_MOINS_7
                 FROM windowed w
@@ -179,8 +184,8 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
                 tgt.IS_HOLIDAY = src.IS_HOLIDAY,
                 tgt.CONSO_MOYENNE_MOBILE_7J = src.CONSO_MOYENNE_MOBILE_7J,
                 tgt.CONSO_J_MOINS_7 = src.CONSO_J_MOINS_7
-            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, YEAR, CONSO_MOYENNE_MOBILE_7J, CONSO_J_MOINS_7)
-            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.YEAR, src.CONSO_MOYENNE_MOBILE_7J, src.CONSO_J_MOINS_7)
+            WHEN NOT MATCHED THEN INSERT (DATE_KEY, DATE_HEURE, REGION_CODE, CONSOMMATION, TEMPERATURE_2M, PRECIPITATION, IS_HOLIDAY, CONSO_MOYENNE_MOBILE_7J, CONSO_J_MOINS_7)
+            VALUES (src.DATE_KEY, src.DATE_HEURE, src.REGION_CODE, src.CONSOMMATION, src.TEMPERATURE_2M, src.PRECIPITATION, src.IS_HOLIDAY, src.CONSO_MOYENNE_MOBILE_7J, src.CONSO_J_MOINS_7)
         """, {"start_date": start_date} if start_date else None)
     finally:
         cur.close()

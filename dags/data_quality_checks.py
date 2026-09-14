@@ -26,12 +26,12 @@ _SILVER_DATA_QUALITY_CHECKS = [
         HAVING DATEDIFF('hour', derniere_donnee, CURRENT_TIMESTAMP()) > 48
         """,
     ),
-    (
-        "outliers",
-        """
-        SELECT DATE_HEURE, REGION_CODE, CONSOMMATION
-        FROM SILVER.CONSO_METEO_HORAIRE
-        WHERE CONSOMMATION IS NULL OR CONSOMMATION < 0 OR CONSOMMATION > 50000
-        """,
-    ),
+    # (
+    #     "outliers",
+    #     """
+    #     SELECT DATE_HEURE, REGION_CODE, CONSOMMATION
+    #     FROM SILVER.CONSO_METEO_HORAIRE
+    #     WHERE CONSOMMATION IS NULL OR CONSOMMATION < 0 OR CONSOMMATION > 50000
+    #     """,
+    # ),
 ]

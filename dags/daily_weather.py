@@ -2,7 +2,7 @@ import json
 import polars as pl
 
 from pathlib import Path
-from datetime import timedelta, date
+from datetime import timedelta
 from airflow.sdk import dag, task
 
 from energy_pipeline.global_utils import region_code_from_filename
@@ -14,6 +14,7 @@ from ingestion_utils import (
     raw_weather_daily_glob_pattern,
     write_bronze_partitioned,
     write_flat_staging_copy,
+    yesterday_str,
 )
 from snowflake_utils import load_bronze_to_snowflake
 from energy_pipeline.config import (
@@ -38,10 +39,10 @@ def daily_weather():
 
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_weather_updates(region):
-        """Fetch hourly weather data for one region from the last ingested date up to today, and write it as raw JSON."""
+        """Fetch hourly weather data for one region from the last ingested date up to yesterday, and write it as raw JSON."""
         region_code, (latitude, longitude) = region
         start_date = resolve_latest_partition_date(path=f"{WEATHER_DATA_PATH}/region_code={region_code}")
-        end_date = date.today().isoformat()
+        end_date = yesterday_str()
         params = {
             "latitude": latitude,
             "longitude": longitude,

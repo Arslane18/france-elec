@@ -5,7 +5,8 @@ from ingestion_utils import (
     compute_years,
     fetch_and_store,
     raw_eco2mix_path,
-    raw_eco2mix_glob
+    raw_eco2mix_glob,
+    today_str,
 )
 from snowflake_utils import load_bronze_to_snowflake
 from spark_submit_helpers import build_spark_submit_operator
@@ -29,8 +30,8 @@ def backfill_eco2mix():
 
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_eco2mix_year(year: int):
-        """Fetch one full year of eco2mix consumption records and write it as raw parquet."""
-        params = {"select": ECO2MIX_SELECT_COLUMNS, "where": f"year(date_heure) = {year}"}
+        """Fetch one full year of eco2mix consumption records, excluding today (not yet finalized at the source), and write it as raw parquet."""
+        params = {"select": ECO2MIX_SELECT_COLUMNS, "where": f"year(date_heure) = {year} and date_heure < date'{today_str()}'"}
         fetch_and_store(url=BASE_URL + "/exports/parquet", params=params, path=raw_eco2mix_path(year))
 
     build_bronze_eco2mix = build_spark_submit_operator(

@@ -3,7 +3,7 @@ import polars as pl
 
 from typing import Dict, Any
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from airflow.sdk import task
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -59,12 +59,21 @@ def raw_weather_daily_path(region_code: int) -> str:
 def raw_weather_daily_glob_pattern() -> str:
     return f"{WEATHER_NAME}-*-{DAILY_MARKER}.json"
 
+def today_str() -> str:
+    '''UTC, not local time: date_heure from the source is UTC, so "today" must be too.'''
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+def yesterday_str() -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+
 def year_date_range(year: int) -> tuple[str, str]:
-    '''Full calendar year, capped at today for the current year.'''
+    '''Full calendar year, capped at yesterday for the current year: today's data
+    isn't finalized yet at the source, so excluding it here keeps the backfill
+    from writing partial/still-changing rows.'''
     start_date = f"{year}-01-01"
     end_date = f"{year}-12-31"
-    if year == datetime.today().year:
-        end_date = datetime.today().strftime("%Y-%m-%d")
+    if year == datetime.now(timezone.utc).year:
+        end_date = yesterday_str()
     return start_date, end_date
 
 

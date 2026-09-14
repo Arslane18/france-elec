@@ -14,6 +14,7 @@ def parse_silver_args() -> argparse.Namespace:
 
 def clean_eco2mix(df):
     df = df.withColumn("region_code", F.col("code_insee_region").cast("int"))
+    df = df.groupBy("region_code", "date_heure").agg(F.avg("consommation").alias("consommation"))
     return agg_temporelle(df, ["region_code"], "consommation")
 
 def clean_meteo(df):

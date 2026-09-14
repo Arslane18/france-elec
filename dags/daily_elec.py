@@ -7,6 +7,7 @@ from ingestion_utils import (
     resolve_latest_partition_date,
     raw_eco2mix_daily_path,
     write_bronze_partitioned,
+    today_str,
 )
 from snowflake_utils import load_bronze_to_snowflake
 from energy_pipeline.config import ECO2MIX_DATA_PATH, ECO2MIX_SELECT_COLUMNS, RTE_URL
@@ -24,9 +25,9 @@ def daily_eco2mix():
 
     @task(max_active_tis_per_dagrun=1, retries=3, retry_delay=timedelta(minutes=1))
     def fetch_eco2mix_updates() -> str:
-        """Fetch eco2mix records more recent than target_date and write them as raw parquet."""
+        """Fetch eco2mix records more recent than target_date, excluding today (not yet finalized at the source), and write them as raw parquet."""
         target_date = resolve_latest_partition_date(path=ECO2MIX_DATA_PATH)
-        params = {"select": ECO2MIX_SELECT_COLUMNS, "where": f"date_heure > date'{target_date}'"}
+        params = {"select": ECO2MIX_SELECT_COLUMNS, "where": f"date_heure > date'{target_date}' and date_heure < date'{today_str()}'"}
         path = raw_eco2mix_daily_path()
         fetch_and_store(url=RTE_URL + "/exports/parquet", params=params, path=path)
         return path

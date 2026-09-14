@@ -1,7 +1,11 @@
 from airflow.sdk import dag
 
 from ingestion_utils import resolve_target_date
-from snowflake_utils import merge_silver_to_snowflake, construct_gold_layer
+from snowflake_utils import (
+    merge_silver_to_snowflake,
+    construct_gold_layer,
+    run_silver_data_quality_checks,
+)
 from spark_submit_helpers import build_spark_submit_operator
 from energy_pipeline.config import (
     ECO2MIX_DATA_PATH,
@@ -46,8 +50,9 @@ def _build_transformation_dag(dag_id: str, tags: list[str], with_window: bool):
         )
 
         load_snowflake = merge_silver_to_snowflake(ECO2MIX_WEATHER_STAGING_PATH)
+        dq_check = run_silver_data_quality_checks()
 
-        build_silver >> load_snowflake >> construct_gold_layer(start_date=start_date)
+        build_silver >> load_snowflake >> dq_check >> construct_gold_layer(start_date=start_date)
 
     return _transformation_dag()
 

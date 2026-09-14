@@ -1,7 +1,10 @@
 from pathlib import Path
 
 from airflow.sdk import task, XComArg
+from airflow.sdk.exceptions import AirflowFailException
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
+
+from data_quality_checks import _SILVER_DATA_QUALITY_CHECKS
 
 
 @task
@@ -190,4 +193,29 @@ def construct_gold_layer(start_date: str | None | XComArg = None) -> None:
     finally:
         cur.close()
         conn.close()
+
+
+
+@task
+def run_silver_data_quality_checks() -> None:
+    """Run each check in _SILVER_DATA_QUALITY_CHECKS against SILVER.CONSO_METEO_HORAIRE
+    and fail the task if any of them return violating rows.
+    """
+    hook = SnowflakeHook(snowflake_conn_id="snowflake_default")
+    conn = hook.get_conn()
+    cur = conn.cursor()
+    failures = {}
+    try:
+        for name, sql in _SILVER_DATA_QUALITY_CHECKS:
+            cur.execute(sql)
+            row_count = len(cur.fetchall())
+            if row_count:
+                failures[name] = row_count
+    finally:
+        cur.close()
+        conn.close()
+
+    if failures:
+        details = ", ".join(f"{name}: {count} row(s)" for name, count in failures.items())
+        raise AirflowFailException(f"Silver data quality checks failed -- {details}")
 

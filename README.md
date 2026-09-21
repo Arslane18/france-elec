@@ -67,32 +67,50 @@ Spins up 1 master + 2 workers (`docker-compose.yml`), reachable at `spark://loca
 
 ### 3. Set up Snowflake
 
-Run the DDL scripts against your account, in order:
+Generate a key pair for key-based authentication (the private key is git-ignored):
+
+```bash
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -nocrypt -out rsa_key.p8
+openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
+```
+
+Register the public key on your Snowflake user (paste the key body from `rsa_key.pub`, without the `BEGIN/END` lines):
+
+```sql
+ALTER USER <your_snowflake_user> SET RSA_PUBLIC_KEY='<key body>';
+```
+
+Then run the DDL scripts against your account, in order (`00` needs a role that can create roles, e.g. `ACCOUNTADMIN`; it grants the loader role to the user running it):
 
 ```bash
 snowsql -f snowflake/00_setup_warehouse_db.sql
 snowsql -f snowflake/01_bronze_ddl.sql
 snowsql -f snowflake/02_silver_ddl.sql
 snowsql -f snowflake/03_gold_star_schema.sql
+snowsql -f snowflake/04_data_test.sql
 ```
 
 This creates the `ELEC_FORECAST` database with `BRONZE` / `SILVER` / `GOLD` schemas.
 
 ### 4. Configure Airflow
 
+Create your `.env` from the template and fill in your Snowflake user, account id and the absolute path to `rsa_key.p8`:
+
 ```bash
+cp .env.example .env
+```
+
+`.env` defines the `snowflake_default` connection through the `AIRFLOW_CONN_SNOWFLAKE_DEFAULT` environment variable, so load it in the shell that starts Airflow:
+
+```bash
+set -a; source .env; set +a
 export AIRFLOW_HOME=$(pwd)/.airflow
 uv run airflow standalone
 ```
 
-`airflow standalone` prints an auto-generated admin password and serves the UI at `http://localhost:8080`. Then, in another terminal, register the two connections and the Spark pool the DAGs expect:
+`airflow standalone` prints an auto-generated admin password and serves the UI at `http://localhost:8080`. Then, in another terminal, register the Spark connection and pool the DAGs expect:
 
 ```bash
-uv run airflow connections add snowflake_default \
-  --conn-type snowflake \
-  --conn-login <your_snowflake_user> \
-  --conn-extra "{\"account\": \"<your_account_id>\", \"warehouse\": \"<your_warehouse>\", \"database\": \"ELEC_FORECAST\", \"private_key_file\": \"$(pwd)/rsa_key.p8\"}"
-
 uv run airflow connections add spark_standalone \
   --conn-type spark \
   --conn-host spark://localhost \

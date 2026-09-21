@@ -13,8 +13,8 @@ services:
       - --webui-port
       - "8090"
     volumes:
-      - .:/home/arsla/personal_projects/france-elec
-    working_dir: /home/arsla/personal_projects/france-elec
+      - ${PROJECT_ROOT:-${PWD}}:${PROJECT_ROOT:-${PWD}}
+    working_dir: ${PROJECT_ROOT:-${PWD}}
 
   spark-worker-1:
     build: ./docker/spark
@@ -33,8 +33,8 @@ services:
       - --memory
       - "1g"
     volumes:
-      - .:/home/arsla/personal_projects/france-elec
-    working_dir: /home/arsla/personal_projects/france-elec
+      - ${PROJECT_ROOT:-${PWD}}:${PROJECT_ROOT:-${PWD}}
+    working_dir: ${PROJECT_ROOT:-${PWD}}
 
   spark-worker-2:
     build: ./docker/spark
@@ -53,5 +53,5 @@ services:
       - --memory
       - "1g"
     volumes:
-      - .:/home/arsla/personal_projects/france-elec
-    working_dir: /home/arsla/personal_projects/france-elec
+      - ${PROJECT_ROOT:-${PWD}}:${PROJECT_ROOT:-${PWD}}
+    working_dir: ${PROJECT_ROOT:-${PWD}}

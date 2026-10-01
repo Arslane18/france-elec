@@ -19,3 +19,6 @@ data/*
 
 # IDE
 .vscode/
+
+# Anthropic
+CLAUDE.md

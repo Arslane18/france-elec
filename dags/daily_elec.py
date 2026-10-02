@@ -48,7 +48,7 @@ def daily_eco2mix():
         df = pl.read_parquet(path)
         # Used to have problems between dailys and backfills runs, this resolve the problem by standardizing schema.
         df = df.with_columns(
-            date_heure=pl.col('date_heure').dt.replace_time_zone(None).dt.cast_time_unit("us"),
+            date_heure=pl.col("date_heure").dt.convert_time_zone("UTC").dt.cast_time_unit("us"),
         )
         return write_bronze_partitioned(
             df,

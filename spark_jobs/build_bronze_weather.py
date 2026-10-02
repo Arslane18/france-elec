@@ -11,7 +11,7 @@ def main() -> None:
     args = parse_bronze_args()
     raw_dir = Path(args.raw_dir)
 
-    spark = SparkSession.builder.appName("openmeteo-bronze").getOrCreate()
+    spark = SparkSession.builder.appName("openmeteo-bronze").config("spark.sql.session.timeZone", "UTC").getOrCreate()
     try:
         rows = []
         # Exclude the daily DAG's own raw file (openmeteo-<region>-daily.json) because it leads to duplicates.

@@ -74,4 +74,5 @@ SPARK_CONFIG = {
             "spark.pyspark.python": "python3.13",
             "spark.pyspark.driver.python": "python3.13",
             "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2",
+            "spark.sql.parquet.outputTimestampType": "TIMESTAMP_MICROS",
         }

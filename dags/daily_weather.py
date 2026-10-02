@@ -73,7 +73,7 @@ def daily_weather():
             return []
 
         df = pl.from_dicts(rows)
-        df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M"))
+        df = df.with_columns(time=pl.col("time").str.to_datetime("%Y-%m-%dT%H:%M", time_zone="UTC"))
         write_bronze_partitioned(
             df,
             partition_date_expr=pl.col("time"),

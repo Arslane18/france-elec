@@ -20,6 +20,8 @@ ECO2MIX_NAME = "eco2mix-regional-cons-def"
 ECO2MIX_DATA_PATH = f"{BRONZE_DIR}/{ECO2MIX_NAME}"
 ECO2MIX_STAGING_PATH = f"{BRONZE_DIR}/_staging/{ECO2MIX_NAME}"
 ECO2MIX_SELECT_COLUMNS = "date_heure, date, code_insee_region, libelle_region, nature, consommation"
+# date_heure is UTC, but eco2mix's `date` column (our bronze day partitions) is the French local day.
+ECO2MIX_TIMEZONE = "Europe/Paris"
 
 WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
 

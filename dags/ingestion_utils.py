@@ -3,13 +3,14 @@ import polars as pl
 
 from typing import Dict, Any
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 from airflow.sdk import task
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from airflow.sdk.exceptions import AirflowFailException
 
-from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, WEATHER_NAME, DAILY_MARKER
+from energy_pipeline.config import BASE_URL, RAW_DIR, ECO2MIX_NAME, ECO2MIX_TIMEZONE, WEATHER_NAME, DAILY_MARKER
 
 
 session = requests.Session()
@@ -65,6 +66,22 @@ def today_str() -> str:
 
 def yesterday_str() -> str:
     return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+def eco2mix_today_str() -> str:
+    '''Today in eco2mix's local timezone: its `date` column, which the bronze day
+    partitions are built from, is the French local day, not the UTC one.'''
+    return datetime.now(ZoneInfo(ECO2MIX_TIMEZONE)).strftime("%Y-%m-%d")
+
+def eco2mix_day_start_utc(day: str) -> str:
+    '''UTC instant (ISO 8601) at which the French local day `day` (YYYY-MM-DD) starts.
+
+    For ODSQL range filters on date_heure aligned on our local-day partitions: a
+    `date'YYYY-MM-DD'` literal is compared against date_heure by *UTC day*, which
+    is off by 1-2h (DST) from the local day, and the text `date` column doesn't
+    support range comparisons at all.
+    '''
+    local_midnight = datetime.combine(date.fromisoformat(day), time.min, tzinfo=ZoneInfo(ECO2MIX_TIMEZONE))
+    return local_midnight.astimezone(timezone.utc).isoformat()
 
 def year_date_range(year: int) -> tuple[str, str]:
     '''Full calendar year, capped at yesterday for the current year: today's data

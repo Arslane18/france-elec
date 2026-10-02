@@ -23,6 +23,10 @@ def _build_transformation_dag(dag_id: str, tags: list[str], with_window: bool):
     build_silver to a rolling window via resolve_target_date (with_window=True).
     Structurally identical otherwise -- same Spark job, same Snowflake load/merge --
     so kept as one factory instead of two near-duplicate DAG files.
+
+    Only the full rebuild writes the local silver lake: the daily run only feeds the
+    staging copy merged into SILVER.CONSO_METEO_HORAIRE, which is the silver source of
+    truth (the local lake is a snapshot as of the last full rebuild).
     """
 
     @dag(dag_id=dag_id, schedule=None, catchup=False, tags=tags)
@@ -32,12 +36,13 @@ def _build_transformation_dag(dag_id: str, tags: list[str], with_window: bool):
         application_args = [
             "--eco2mix-path", ECO2MIX_DATA_PATH,
             "--openmeteo-path", WEATHER_DATA_PATH,
-            "--output-dir", ECO2MIX_WEATHER_DATA_PATH,
             "--holiday-path", HOLIDAY_PATH,
             "--staging-dir", ECO2MIX_WEATHER_STAGING_PATH,
         ]
         if with_window:
             application_args += ["--start-date", start_date]
+        else:
+            application_args += ["--output-dir", ECO2MIX_WEATHER_DATA_PATH]
 
         build_silver = build_spark_submit_operator(
             task_id="build_silver",

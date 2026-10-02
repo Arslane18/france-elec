@@ -37,9 +37,11 @@ def main() -> None:
     result_df = result_df.fillna({"is_holiday": 0})
     result_df = result_df.withColumn("year", F.year("date_heure"))
 
-    result_df.write.partitionBy(
-                "region_code", "year"
-            ).parquet(args.output_dir, mode="overwrite")
+    # Only the full rebuild writes the local silver lake (see parse_silver_args).
+    if args.output_dir:
+        result_df.write.partitionBy(
+                    "region_code", "year"
+                ).parquet(args.output_dir, mode="overwrite")
 
     if args.staging_dir:
         result_df.coalesce(8).write.parquet(args.staging_dir, mode="overwrite")

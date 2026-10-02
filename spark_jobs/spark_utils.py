@@ -6,11 +6,20 @@ def parse_silver_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--eco2mix-path", required=True)
     parser.add_argument("--openmeteo-path", required=True)
-    parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--output-dir", required=False, help="Local silver lake, partitioned by region_code/year. Full rebuild only")
     parser.add_argument("--start-date", required=False)
     parser.add_argument("--holiday-path", required=False)
     parser.add_argument("--staging-dir", required=False, help="Flat, non-partitioned copy for the Snowflake MERGE, coalesced into fewer files")
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # A windowed run only holds a few days, but dynamic overwrite replaces every
+    # region_code/year partition it touches: writing it to the lake would wipe the
+    # rest of the year. Windowed runs feed Snowflake only (the silver source of truth).
+    if args.start_date and args.output_dir:
+        parser.error("--output-dir can't be combined with --start-date: a windowed run would truncate the touched region_code/year partitions")
+    if not (args.output_dir or args.staging_dir):
+        parser.error("at least one of --output-dir or --staging-dir is required")
+    return args
 
 def clean_eco2mix(df):
     df = df.withColumn("region_code", F.col("code_insee_region").cast("int"))
